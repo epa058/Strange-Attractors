@@ -7,20 +7,32 @@ import math
 print("1: Lorenz attractor")
 print("2: Aizawa attractor")
 
-choice = input("Enter either 1 or 2: ")
+attractor = int(input("Enter either 1 or 2: "))
 
-# Time step
+# Position and time step
+x, y, z = [], [], []
 dt = 0.01
 
 # Total steps
 steps = 4000
 
+# Trajectories
+trajectories = []
+
 # Initialize the system
-if choice == "1":
-    choice = "Lorenz"
+if attractor == 1:
     
-    x, y, z = 1, 1, 1
-    print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x, y, z))
+    attractor = "Lorenz"
+    numTraj = int(input("Enter the number of trajectories: "))
+
+    for i in range(numTraj):
+        a, b, c = input("Enter an initial position (around 1, 1, 1 is recommended): ").split(', ')
+        x.append(float(a))
+        y.append(float(b))
+        z.append(float(c))
+    
+    for i in range(numTraj):
+        print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
 
     # Lorenz parameters
     rho = 28.0
@@ -35,18 +47,29 @@ if choice == "1":
         return x + dx, y + dy, z + dz
 
     # Trajectory
-    data = np.zeros((steps, 3))
-    for i in range(steps):
-        x, y, z = lorenz(x, y, z, dt)
-        data[i] = x, y, z
+    for i in range(numTraj):
+        trajectories.append(np.zeros((steps, 3)))
 
-elif choice == "2":
-    choice = "Aizawa"
+    for i in range(numTraj):
+        for j in range(steps):
+            x[i], y[i], z[i] = lorenz(x[i], y[i], z[i], dt)
+            trajectories[i][j] = x[i], y[i], z[i]
+        
+elif attractor == 2:
     
-    x, y, z = 0.1, 0, 0
-    u, v, w = 1.1, 0, 0
-    print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x, y, z))
-    print("Initial position: (u, v, w) = (%.2f, %.2f, %.2f)" % (u, v, w))
+    attractor = "Aizawa"
+    numTraj = int(input("Enter the number of trajectories: "))
+
+    for i in range(numTraj):
+        print(x, y, z)
+        a, b, c = input("Enter an initial position (around 0.1, 0, 0 is recommended): ").split(', ')
+        x.append(float(a))
+        y.append(float(b))
+        z.append(float(c))
+        print(x, y, z)
+        
+        for i in range(numTraj):
+            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
 
     # Aizawa parameters
     alpha = 0.95
@@ -64,13 +87,13 @@ elif choice == "2":
         return x + dx, y + dy, z + dz
 
     # Trajectory
-    data1 = np.zeros((steps, 3))
-    data2 = np.zeros((steps, 3))
-    for i in range(steps):
-        x, y, z = aizawa(x, y, z, dt)
-        u, v, w = aizawa(u, v, w, dt)
-        data1[i] = x, y, z
-        data2[i] = u, v, w
+    for i in range(numTraj):
+        trajectories.append(np.zeros((steps, 3)))
+
+    for i in range(numTraj):
+        for j in range(steps):
+            x[i], y[i], z[i] = aizawa(x[i], y[i], z[i], dt)
+            trajectories[i][j] = x[i], y[i], z[i]
 
 # Figure setup
 fig = plt.figure()
@@ -78,12 +101,14 @@ ax = plt.axes(projection='3d')
 ax.set_xlabel("X Axis")
 ax.set_ylabel("Y Axis")
 ax.set_zlabel("Z Axis")
-ax.set_title("%s Attractor" % (choice))
+ax.set_title("%s Attractor" % (attractor))
 
 # Plot final figure
-ax.plot(data1[:, 0], data1[:, 1], data1[:, 2])
-ax.plot(data2[:, 0], data2[:, 1], data2[:, 2])
-plt.draw()
+for i in range(numTraj):
+    ax.plot(trajectories[i][:, 0], trajectories[i][:, 1], trajectories[i][:, 2], label="Trajectory %d" % (i+1))
+    plt.draw()
+
+plt.legend()
 plt.show()
 '''
 # Animate
