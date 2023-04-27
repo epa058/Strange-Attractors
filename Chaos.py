@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+import matplotlib.animation as animation
 from mpl_toolkits.mplot3d import Axes3D
 import math
 
@@ -159,6 +159,7 @@ while True:
     ax.set_zlabel("Z Axis")
     ax.set_title("%s Attractor" % (attractor))
 
+    '''
     # Plot final figure
     for i in range(numTraj):
         ax.plot(trajectories[i][:, 0], trajectories[i][:, 1], trajectories[i][:, 2], label="Trajectory %d" % (i+1))
@@ -167,16 +168,17 @@ while True:
     plt.legend()
     plt.show()
     '''
+     
     # Animate
     def animate(i):
         ax.clear()
         ax.set_xlim(-30, 30)
         ax.set_ylim(-30, 30)
         ax.set_zlim(0, 60)
-        ax.plot(data[:i+1, 0], data[:i+1, 1], data[:i+1, 2])
+        for j in range(numTraj):
+            ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2])
         plt.draw()
 
-    ani = FuncAnimation(fig, animate, frames=10000, interval=1, repeat=False)
-    ani.save('chaos.gif', writer='pillow', fps=30, dpi=100)
+    ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
+    ani.save("%s.gif" % (attractor), writer="pillow", fps=30, dpi=100)
     plt.show()
-    '''
