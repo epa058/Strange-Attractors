@@ -168,13 +168,12 @@ while True:
     plt.legend()
     plt.show()
     '''
-     
     # Animate
     def animate(i):
         ax.clear()
-        ax.set_xlim(-30, 30)
-        ax.set_ylim(-30, 30)
-        ax.set_zlim(0, 60)
+        ax.set_xlim(-2, 2)
+        ax.set_ylim(-2, 2)
+        ax.set_zlim(-1.5, 1.5)
         for j in range(numTraj):
             ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2])
         plt.draw()
@@ -182,3 +181,4 @@ while True:
     ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
     ani.save("%s.gif" % (attractor), writer="pillow", fps=30, dpi=100)
     plt.show()
+    
