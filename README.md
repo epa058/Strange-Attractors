@@ -21,6 +21,10 @@
 
 Work in progress
 
+## License
+
+GNU General Public License v3.0
+
 
 ## FAQ
 
