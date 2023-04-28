@@ -171,9 +171,10 @@ while True:
     # Animate
     def animate(i):
         ax.clear()
-        ax.set_xlim(-2, 2)
-        ax.set_ylim(-2, 2)
-        ax.set_zlim(-1.5, 1.5)
+        ax.set_box_aspect([16,16,16])
+        ax.set_xlim3d([-2, 2])
+        ax.set_ylim3d([-2, 2])
+        ax.set_zlim3d([-2, 2])
         for j in range(numTraj):
             ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2])
         plt.draw()
