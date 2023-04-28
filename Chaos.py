@@ -171,7 +171,7 @@ while True:
     # Animate
     def animate(i):
         ax.clear()
-        ax.set_box_aspect([16,16,16])
+        ax.set_box_aspect([1,1,1])
         #ax.set_xlim3d([-2, 2])
         #ax.set_ylim3d([-2, 2])
         #ax.set_zlim3d([-2, 2])
