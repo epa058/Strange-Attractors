@@ -10,8 +10,7 @@
 
 ## Demo
 
-Insert gif or link to demo
-
+![](https://github.com/epa058/Strange-Attractors/blob/main/Aizawa.gif)
 
 ## Documentation
 
