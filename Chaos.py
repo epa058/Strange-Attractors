@@ -172,14 +172,14 @@ while True:
     def animate(i):
         ax.clear()
         ax.set_box_aspect([16,16,16])
-        ax.set_xlim3d([-2, 2])
-        ax.set_ylim3d([-2, 2])
-        ax.set_zlim3d([-2, 2])
+        #ax.set_xlim3d([-2, 2])
+        #ax.set_ylim3d([-2, 2])
+        #ax.set_zlim3d([-2, 2])
         for j in range(numTraj):
             ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2])
         plt.draw()
 
     ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
-    ani.save("%s.gif" % (attractor), writer="pillow", fps=30, dpi=100)
+    #ani.save("%s.gif" % (attractor), writer="pillow", fps=30, dpi=100)
     plt.show()
     
