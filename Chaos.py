@@ -47,6 +47,7 @@ while True:
             except:
                 print("Bruh.")
                 print()
+                error = True
                 break
             
             try:
@@ -104,6 +105,7 @@ while True:
             except:
                 print("Bruh.")
                 print()
+                error = True
                 break
             
             try:
@@ -167,6 +169,9 @@ while True:
 
     plt.legend()
     plt.show()
+    
+    print()
+    continue
     '''
     # Animate
     def animate(i):
@@ -181,5 +186,8 @@ while True:
 
     ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
     #ani.save("%s.gif" % (attractor), writer="pillow", fps=30, dpi=100)
+    
     plt.show()
     
+    print()
+    continue
