@@ -11,6 +11,11 @@
 ## Demo
 
 ![](https://github.com/epa058/Strange-Attractors/blob/main/Aizawa.gif)
+| Color             | Initial Position      |
+| ----------------- | --------------------- |
+| ![#0a192f] Blue | (x, y, z) = (0.1, 0, 0) |
+| Orange | (x, y, z) = (0.2, 0.1, 0.1) |
+| Green | (x, y, z) = (0.3, 0.1, 0.1) |
 
 ## Documentation
 
