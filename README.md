@@ -19,7 +19,7 @@
 
 ## Documentation
 
-Here (still work in progress though): [Documentation](https://github.com/epa058/Strange-Attractors/blob/main/Documentation.pdf)
+Here (more attractors to come!): [Documentation](https://github.com/epa058/Strange-Attractors/blob/main/Documentation.pdf)
 
 ## License
 
