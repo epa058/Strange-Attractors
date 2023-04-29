@@ -10,7 +10,7 @@
 
 ## Demo
 
-![](https://github.com/epa058/Strange-Attractors/blob/main/Aizawa.gif)
+![](https://github.com/epa058/Strange-Attractors/blob/main/Animations/Aizawa%20Attractor.gif)
 | Color             | Initial Position      |
 | ----------------- | --------------------- |
 | Blue | (x, y, z) = (0.1, 0, 0) |
