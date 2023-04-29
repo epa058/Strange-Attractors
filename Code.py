@@ -185,7 +185,7 @@ while True:
         plt.draw()
 
     ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
-    #ani.save("%s.gif" % (attractor), writer="pillow", fps=30, dpi=100)
+    #ani.save("%s Attractor.gif" % (attractor), writer="pillow", fps=30, dpi=100)
     
     plt.show()
     
