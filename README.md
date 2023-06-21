@@ -8,7 +8,7 @@
 - [@epa058](https://github.com/epa058)
 
 
-## Demo
+## Demo (Aizawa Attractor)
 
 ![](https://github.com/epa058/Strange-Attractors/blob/main/Animations/Aizawa%20Attractor.gif)
 | Color             | Initial Position      |
