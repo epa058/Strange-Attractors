@@ -28,40 +28,61 @@ while True:
     # Trajectories
     trajectories = []
 
-    # Initialize the system
-    if attractor == 1:
+    numTraj = input("Enter the number of trajectories: ")
         
-        attractor = "Lorenz"
-        numTraj = input("Enter the number of trajectories: ")
-        
+    try:
+        numTraj = int(numTraj)
+    except:
+        print("Enter an integer.")
+        print()
+        continue
+
+    for i in range(numTraj):
         try:
-            numTraj = int(numTraj)
+            a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
         except:
-            print("Enter an integer.")
+            print("Bruh.")
             print()
+            error = True
+            break
+            
+        try:
+            x.append(float(a.strip()))
+            y.append(float(b.strip()))
+            z.append(float(c.strip()))
+        except:
+            print("Bruh.")
+            print()
+            error = True
+            break
+
+    if error:
             continue
 
-        for i in range(numTraj):
-            try:
-                a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
-            except:
-                print("Bruh.")
-                print()
-                error = True
-                break
-            
-            try:
-                x.append(float(a.strip()))
-                y.append(float(b.strip()))
-                z.append(float(c.strip()))
-            except:
-                print("Bruh.")
-                print()
-                error = True
-                break
+    save = input("Do you wish to \"save\" the animation or only \"view\" it in real time?: ")
 
-        if error:
-                continue
+    try:
+        save = str(save)
+        save.lower()
+        if save.lower() == "save":
+            save = True
+            
+        elif save.lower() == "view":
+            save = False
+            
+        else:
+            print("Enter \"save\" or \"view.\"")
+            print()
+            continue
+            
+    except:
+        print("Enter \"save\" or \"view.\"")
+        print()
+        continue
+
+    # Initialize the system
+    if attractor == 1:
+        attractor = "Lorenz"
             
         for i in range(numTraj):
             print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
@@ -88,38 +109,7 @@ while True:
                 trajectories[i][j] = x[i], y[i], z[i]
             
     elif attractor == 2:
-        
         attractor = "Aizawa"
-        numTraj = input("Enter the number of trajectories: ")
-        
-        try:
-            numTraj = int(numTraj)
-        except:
-            print("Enter an integer.")
-            print()
-            continue
-
-        for i in range(numTraj):
-            try:
-                a, b, c = input("Enter a comma-separated initial position (around 0.1, 0, 0 is recommended): ").split(',')
-            except:
-                print("Bruh.")
-                print()
-                error = True
-                break
-            
-            try:
-                x.append(float(a.strip()))
-                y.append(float(b.strip()))
-                z.append(float(c.strip()))
-            except:
-                print("Bruh.")
-                print()
-                error = True
-                break
-
-        if error:
-                continue
         
         for i in range(numTraj):
             print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
@@ -173,6 +163,7 @@ while True:
     print()
     continue
     '''
+    
     # Animate
     def animate(i):
         ax.clear()
@@ -185,7 +176,9 @@ while True:
         plt.draw()
 
     ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
-    #ani.save("%s Attractor.gif" % (attractor), writer="pillow", fps=30, dpi=100)
+
+    if save == True:
+        ani.save("%s Attractor.gif" % (attractor), writer="pillow", fps=30, dpi=100)
     
     plt.show()
     
