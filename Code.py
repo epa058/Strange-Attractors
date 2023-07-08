@@ -8,8 +8,10 @@ while True:
     error = False
     print("1: Lorenz attractor")
     print("2: Aizawa attractor")
+    print("3: Halvorsen attractor")
+    print("4: Three-scroll unified chaotic system attractor 2 (TSUCS2)")
 
-    attractor = input("Enter either 1 or 2: ")
+    attractor = input("Enter either 1, 2, 3, or 4: ")
 
     try:
         attractor = int(attractor)
@@ -39,7 +41,12 @@ while True:
 
     for i in range(numTraj):
         try:
-            a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
+            if attractor == 1 or attractor == 2:
+                a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
+            elif attractor == 3:
+                a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
+            elif attractor == 4:
+                a, b, c = input("Enter a comma-separated initial position (no recommendation because I don't know either): ").split(',')
         except:
             print("Bruh.")
             print()
@@ -126,7 +133,7 @@ while True:
         def aizawa(x, y, z, dt):
             dx = ((z - beta) * x - delta * y) * dt
             dy = (delta * x + (z - beta) * y) * dt
-            dz = (gamma + alpha * z - (z**3 / 3) - (x**2 + y**2) * (1 + epsilon * z) + zeta * z * x**3) * dt
+            dz = (gamma + alpha * z - (z*z*z / 3) - (x*x + y*y) * (1 + epsilon * z) + zeta * z * x*x*x) * dt
             return x + dx, y + dy, z + dz
 
         # Trajectory
@@ -138,6 +145,61 @@ while True:
                 x[i], y[i], z[i] = aizawa(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
 
+    elif attractor == 3:
+        attractor = "Halvorsen"
+        
+        for i in range(numTraj):
+            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
+
+        # Halvorsen parameters
+        alpha = 1.89
+
+        # Halvorsen integration for noobs
+        def halvorsen(x, y, z, dt):
+            dx = (- alpha * x - 4 * y - 4 * z - y*y) * dt
+            dy = (- alpha * y - 4 * z - 4 * x - z*z) * dt
+            dz = (- alpha * z - 4 * x - 4 * y - x*x) * dt
+            return x + dx, y + dy, z + dz
+
+        # Trajectory
+        for i in range(numTraj):
+            trajectories.append(np.zeros((steps, 3)))
+
+        for i in range(numTraj):
+            for j in range(steps):
+                x[i], y[i], z[i] = halvorsen(x[i], y[i], z[i], dt)
+                trajectories[i][j] = x[i], y[i], z[i]
+
+    elif attractor == 4:
+        attractor = "TSUCS2"
+        
+        for i in range(numTraj):
+            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
+
+        # TSUCS2 parameters
+        alpha = 40
+        beta = 1.833
+        delta = 0.16
+        epsilon = 0.65
+        sigma = 55
+        zeta  = 20
+
+        # TSUCS2 integration for noobs
+        def TSUCS2(x, y, z, dt):
+            dx = (alpha * (y - x) + delta * x * z) * dt
+            dy = (sigma * x - x * z + zeta * y) * dt
+            dz = (beta * z + x * y - epsilon * x*x) * dt
+            return x + dx, y + dy, z + dz
+
+        # Trajectory
+        for i in range(numTraj):
+            trajectories.append(np.zeros((steps, 3)))
+
+        for i in range(numTraj):
+            for j in range(steps):
+                x[i], y[i], z[i] = TSUCS2(x[i], y[i], z[i], dt)
+                trajectories[i][j] = x[i], y[i], z[i]
+                
     else:
         print("Enter a valid integer.")
         print()
