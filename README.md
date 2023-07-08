@@ -5,7 +5,7 @@
 
 ## Authors
 
-- me
+- Me
 
 
 ## Demo (Aizawa Attractor)
