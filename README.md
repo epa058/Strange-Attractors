@@ -5,7 +5,7 @@
 
 ## Authors
 
-- [@epa058](https://github.com/epa058)
+- me
 
 
 ## Demo (Aizawa Attractor)
