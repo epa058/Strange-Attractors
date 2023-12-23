@@ -1,12 +1,8 @@
-
 # Chaos Theory and Strange Attractors
-
-
 
 ## Authors
 
 - Me
-
 
 ## Demo (Aizawa Attractor)
 
@@ -17,14 +13,9 @@
 | Orange | (x, y, z) = (0.2, 0.1, 0.1) |
 | Green | (x, y, z) = (0.3, 0.1, 0.1) |
 
-## Documentation
-
-Here (more attractors to come!): [Documentation](https://github.com/epa058/Strange-Attractors/blob/main/Documentation.pdf)
-
 ## License
 
 GNU General Public License v3.0
-
 
 ## FAQ
 
