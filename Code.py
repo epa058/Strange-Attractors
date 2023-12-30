@@ -41,12 +41,14 @@ while True:
 
     for i in range(numTraj):
         try:
-            if attractor == 1 or attractor == 2:
+            if attractor == 1:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
+            elif attractor == 2:
+                a, b, c = input("Enter a comma-separated initial position (around 0, 0, 0 is recommended): ").split(',')
             elif attractor == 3:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
             elif attractor == 4:
-                a, b, c = input("Enter a comma-separated initial position (no recommendation because I don't know either): ").split(',')
+                a, b, c = input("Enter a comma-separated initial position (maybe around 1.2969944, 1.12138, 50.028988): ").split(',')
         except:
             print("Bruh.")
             print()
@@ -88,11 +90,18 @@ while True:
         continue
 
     # Initialize the system
+    initPos = []
+    for i in range(numTraj):
+        print("Initial position: (x0, y0, z0) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
+        initPos.append((x[i], y[i], z[i]))
+
+    # Trajectory
+    for i in range(numTraj):
+        trajectories.append(np.zeros((steps, 3)))
+
+    # LORENZ ATTRACTOR
     if attractor == 1:
         attractor = "Lorenz"
-            
-        for i in range(numTraj):
-            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
 
         # Lorenz parameters
         rho = 28.0
@@ -106,20 +115,14 @@ while True:
             dz = (x * y - beta * z) * dt
             return x + dx, y + dy, z + dz
 
-        # Trajectory
-        for i in range(numTraj):
-            trajectories.append(np.zeros((steps, 3)))
-
         for i in range(numTraj):
             for j in range(steps):
                 x[i], y[i], z[i] = lorenz(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
-            
+
+    # AIZAWA ATTRACTOR
     elif attractor == 2:
         attractor = "Aizawa"
-        
-        for i in range(numTraj):
-            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
 
         # Aizawa parameters
         alpha = 0.95
@@ -136,20 +139,14 @@ while True:
             dz = (gamma + alpha * z - (z*z*z / 3) - (x*x + y*y) * (1 + epsilon * z) + zeta * z * x*x*x) * dt
             return x + dx, y + dy, z + dz
 
-        # Trajectory
-        for i in range(numTraj):
-            trajectories.append(np.zeros((steps, 3)))
-
         for i in range(numTraj):
             for j in range(steps):
                 x[i], y[i], z[i] = aizawa(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
 
+    # HALVORSEN ATTRACTOR
     elif attractor == 3:
         attractor = "Halvorsen"
-        
-        for i in range(numTraj):
-            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
 
         # Halvorsen parameters
         alpha = 1.89
@@ -161,20 +158,14 @@ while True:
             dz = (- alpha * z - 4 * x - 4 * y - x*x) * dt
             return x + dx, y + dy, z + dz
 
-        # Trajectory
-        for i in range(numTraj):
-            trajectories.append(np.zeros((steps, 3)))
-
         for i in range(numTraj):
             for j in range(steps):
                 x[i], y[i], z[i] = halvorsen(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
 
+    # TSUCS2 ATTRACTOR
     elif attractor == 4:
         attractor = "TSUCS2"
-        
-        for i in range(numTraj):
-            print("Initial position: (x, y, z) = (%.2f, %.2f, %.2f)" % (x[i], y[i], z[i]))
 
         # TSUCS2 parameters
         alpha = 40
@@ -190,10 +181,6 @@ while True:
             dy = (sigma * x - x * z + zeta * y) * dt
             dz = (beta * z + x * y - epsilon * x*x) * dt
             return x + dx, y + dy, z + dz
-
-        # Trajectory
-        for i in range(numTraj):
-            trajectories.append(np.zeros((steps, 3)))
 
         for i in range(numTraj):
             for j in range(steps):
@@ -213,6 +200,19 @@ while True:
     ax.set_zlabel("Z Axis")
     ax.set_title("%s Attractor" % (attractor))
 
+    # Set the view angle
+    if attractor == "Lorenz":
+        ax.view_init(elev=30, azim=-60) # (also standard view angle)
+
+    elif attractor == "Aizawa":
+        ax.view_init(elev=45, azim=10)
+
+    elif attractor == "Halvorsen":
+        ax.view_init(elev=30, azim=45)
+
+    else:
+        ax.view_init(elev=30, azim=-60)
+
     '''
     # Plot final figure
     for i in range(numTraj):
@@ -230,18 +230,16 @@ while True:
     def animate(i):
         ax.clear()
         ax.set_box_aspect([1,1,1])
-        #ax.set_xlim3d([-2, 2])
-        #ax.set_ylim3d([-2, 2])
-        #ax.set_zlim3d([-2, 2])
         for j in range(numTraj):
-            ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2])
+            ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2], label="$(x_0, y_0, z_0) = (%.2f, %.2f, %.2f)$" % (initPos[j][0], initPos[j][1], initPos[j][2]))
+        ax.legend(loc="upper right") # COMMENT OUT IF YOU DO NOT WANT A LEGEND IN YOUR ANIMATIONS
         plt.draw()
 
     ani = animation.FuncAnimation(fig, animate, frames=steps, interval=1, repeat=False)
 
     if save == True:
         ani.save("%s Attractor.gif" % (attractor), writer="pillow", fps=30, dpi=100)
-    
+
     plt.show()
     
     print()
