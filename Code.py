@@ -48,7 +48,7 @@ while True:
             elif attractor == 3:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
             elif attractor == 4:
-                a, b, c = input("Enter a comma-separated initial position (maybe around 1.2969944, 1.12138, 50.028988): ").split(',')
+                a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 and 1, 1, 1 are recommended): ").split(',')
         except:
             print("Bruh.")
             print()
@@ -167,9 +167,11 @@ while True:
     elif attractor == 4:
         attractor = "TSUCS2"
 
+        dt = 0.0001 # Because TSUCS2 is huge
+
         # TSUCS2 parameters
         alpha = 40
-        beta = 1.833
+        beta = 11/6
         delta = 0.16
         epsilon = 0.65
         sigma = 55
@@ -209,6 +211,9 @@ while True:
 
     elif attractor == "Halvorsen":
         ax.view_init(elev=30, azim=45)
+
+    elif attractor == "TSUCS2":
+        ax.view_init(elev=20, azim=130)
 
     else:
         ax.view_init(elev=30, azim=-60)
