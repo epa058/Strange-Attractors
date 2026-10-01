@@ -6,7 +6,8 @@
 
 ## Demo (Aizawa Attractor)
 
-![](https://github.com/epa058/Strange-Attractors/blob/main/Animations/Thumbnail.gif)
+![](Animations/Thumbnail.gif)
+
 | Color             | Initial Position      |
 | ----------------- | --------------------- |
 | Blue | (x, y, z) = (0.1, 0, 0) |
