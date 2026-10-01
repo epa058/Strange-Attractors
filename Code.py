@@ -15,8 +15,13 @@ while True:
 
     try:
         attractor = int(attractor)
-    except:
+    except ValueError:
         print("Enter an integer.")
+        print()
+        continue
+
+    if attractor not in (1, 2, 3, 4):
+        print("Enter a valid integer.")
         print()
         continue
 
@@ -24,8 +29,11 @@ while True:
     x, y, z = [], [], []
     dt = 0.01
 
-    # Total steps
+    # Total steps (also the number of animation frames)
     steps = 4000
+
+    # Points revealed per animation frame (only TSUCS2 uses more than 1)
+    pointsPerFrame = 1
 
     # Trajectories
     trajectories = []
@@ -34,7 +42,7 @@ while True:
         
     try:
         numTraj = int(numTraj)
-    except:
+    except ValueError:
         print("Enter an integer.")
         print()
         continue
@@ -49,7 +57,7 @@ while True:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
             elif attractor == 4:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 and 1, 1, 1 are recommended): ").split(',')
-        except:
+        except ValueError:
             print("Bruh.")
             print()
             error = True
@@ -59,7 +67,7 @@ while True:
             x.append(float(a.strip()))
             y.append(float(b.strip()))
             z.append(float(c.strip()))
-        except:
+        except ValueError:
             print("Bruh.")
             print()
             error = True
@@ -72,7 +80,6 @@ while True:
 
     try:
         save = str(save)
-        save.lower()
         if save.lower() == "save":
             save = True
             
@@ -84,7 +91,7 @@ while True:
             print()
             continue
             
-    except:
+    except ValueError:
         print("Enter \"save\" or \"view.\"")
         print()
         continue
@@ -116,7 +123,8 @@ while True:
             return x + dx, y + dy, z + dz
 
         for i in range(numTraj):
-            for j in range(steps):
+            trajectories[i][0] = initPos[i]
+            for j in range(1, steps):
                 x[i], y[i], z[i] = lorenz(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
 
@@ -140,7 +148,8 @@ while True:
             return x + dx, y + dy, z + dz
 
         for i in range(numTraj):
-            for j in range(steps):
+            trajectories[i][0] = initPos[i]
+            for j in range(1, steps):
                 x[i], y[i], z[i] = aizawa(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
 
@@ -159,7 +168,8 @@ while True:
             return x + dx, y + dy, z + dz
 
         for i in range(numTraj):
-            for j in range(steps):
+            trajectories[i][0] = initPos[i]
+            for j in range(1, steps):
                 x[i], y[i], z[i] = halvorsen(x[i], y[i], z[i], dt)
                 trajectories[i][j] = x[i], y[i], z[i]
 
@@ -167,7 +177,10 @@ while True:
     elif attractor == 4:
         attractor = "TSUCS2"
 
-        dt = 0.0001 # Because TSUCS2 is huge
+        dt = 0.0001 # Because TSUCS2 is huge (Euler blows up at larger dt)
+        integSteps = 200000 # t = 20, enough to visit all three scrolls
+        drawStride = 5 # Keep every 5th point for drawing (about as smooth as Lorenz)
+        pointsPerFrame = integSteps // drawStride // steps # Reveal 10 drawn points per frame so the animation stays at steps frames
 
         # TSUCS2 parameters
         alpha = 40
@@ -185,9 +198,12 @@ while True:
             return x + dx, y + dy, z + dz
 
         for i in range(numTraj):
-            for j in range(steps):
+            fullTraj = np.zeros((integSteps, 3))
+            fullTraj[0] = initPos[i]
+            for j in range(1, integSteps):
                 x[i], y[i], z[i] = TSUCS2(x[i], y[i], z[i], dt)
-                trajectories[i][j] = x[i], y[i], z[i]
+                fullTraj[j] = x[i], y[i], z[i]
+            trajectories[i] = fullTraj[::drawStride]
                 
     else:
         print("Enter a valid integer.")
@@ -235,8 +251,9 @@ while True:
     def animate(i):
         ax.clear()
         ax.set_box_aspect([1,1,1])
+        n = (i + 1) * pointsPerFrame
         for j in range(numTraj):
-            ax.plot(trajectories[j][:i+1, 0], trajectories[j][:i+1, 1], trajectories[j][:i+1, 2], label="$(x_0, y_0, z_0) = (%.2f, %.2f, %.2f)$" % (initPos[j][0], initPos[j][1], initPos[j][2]))
+            ax.plot(trajectories[j][:n, 0], trajectories[j][:n, 1], trajectories[j][:n, 2], label="$(x_0, y_0, z_0) = (%.2f, %.2f, %.2f)$" % (initPos[j][0], initPos[j][1], initPos[j][2]))
         ax.legend(loc="upper right") # COMMENT OUT IF YOU DO NOT WANT A LEGEND IN YOUR ANIMATIONS
         plt.draw()
 
