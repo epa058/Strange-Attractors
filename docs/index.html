@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Strange Attractors — live viewer</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; background: #000; color: #d8e6e8; overflow: hidden;
+                 font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+    #panel { position: fixed; top: 12px; left: 12px; width: 280px; max-height: calc(100% - 24px); overflow-y: auto;
+             padding: 14px; box-sizing: border-box; border-radius: 10px;
+             background: rgba(10, 16, 18, 0.78); backdrop-filter: blur(6px); border: 1px solid rgba(120, 200, 205, 0.18); }
+    #panel h1 { font-size: 15px; margin: 0 0 10px; font-weight: 600; }
+    label { display: block; margin: 9px 0 3px; color: #9db3b6; }
+    label span { float: right; color: #d8e6e8; font-variant-numeric: tabular-nums; }
+    select, input[type=range] { width: 100%; }
+    select { background: #10191b; color: inherit; border: 1px solid #2c4245; border-radius: 6px; padding: 4px; }
+    input[type=color] { width: 44px; height: 24px; border: none; background: none; padding: 0; vertical-align: middle; }
+    .row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .row label { margin: 0; }
+    .buttons { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+    button { background: #17282b; color: inherit; border: 1px solid #2c4245; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+    button:hover { background: #1f3639; }
+    #equations { margin: 12px 0 0; padding: 8px; background: rgba(0, 0, 0, 0.35); border-radius: 6px;
+                 white-space: pre-wrap; font: 12px/1.5 ui-monospace, Consolas, monospace; color: #bcd2d4; }
+    #status { margin-top: 8px; min-height: 1.4em; color: #8fd3d8; }
+    #fps { position: fixed; right: 10px; bottom: 8px; color: #4f6669; font-size: 11px; }
+    #show { position: fixed; top: 12px; left: 12px; }
+    #error { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px;
+             text-align: center; background: #000; color: #f0b6b6; font-size: 15px; }
+    #error[hidden], #show[hidden], #panel[hidden] { display: none; }
+    .hint { margin-top: 10px; color: #6f878a; font-size: 12px; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <div id="panel">
+    <h1>Strange Attractors</h1>
+
+    <label for="attractor">Attractor</label>
+    <select id="attractor"></select>
+
+    <label for="particles">Particles</label>
+    <select id="particles">
+      <option value="256">65,536</option>
+      <option value="512">262,144</option>
+      <option value="1024">1,048,576</option>
+    </select>
+
+    <label for="speed">Speed <span id="speedValue"></span></label>
+    <input id="speed" type="range" min="0" max="4" step="0.05">
+
+    <label for="trails">Trails <span id="trailsValue"></span></label>
+    <input id="trails" type="range" min="0" max="0.98" step="0.01">
+
+    <label for="glow">Glow <span id="glowValue"></span></label>
+    <input id="glow" type="range" min="-2.5" max="0.5" step="0.01">
+
+    <label for="size">Point size <span id="sizeValue"></span></label>
+    <input id="size" type="range" min="1" max="4" step="1">
+
+    <div class="row">
+      <label for="color">Colour</label><input id="color" type="color">
+      <label for="autorotate"><input id="autorotate" type="checkbox"> Auto-rotate</label>
+    </div>
+
+    <div class="buttons">
+      <button id="pause">Pause</button>
+      <button id="restart">Restart</button>
+      <button id="recenter">Reset view</button>
+      <button id="hide">Hide (H)</button>
+    </div>
+
+    <pre id="equations"></pre>
+    <div id="status"></div>
+    <div class="hint">Drag to rotate, scroll to zoom, right-drag to pan. Space pauses.</div>
+  </div>
+
+  <button id="show" hidden>Show controls</button>
+  <div id="fps"></div>
+  <div id="error" hidden></div>
+
+  <script type="module" src="./viewer.js"></script>
+</body>
+</html>
