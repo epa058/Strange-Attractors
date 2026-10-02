@@ -86,7 +86,7 @@ while True:
     for i in range(numTraj):
         try:
             if attractor == 1:
-                a, b, c = input("Enter a comma-separated initial position (around 0, 0, 0 is recommended): ").split(',')
+                a, b, c = input("Enter a comma-separated initial position (around 0.1, 0, 0 is recommended): ").split(',')
             elif attractor == 2:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
             elif attractor == 3:
@@ -204,7 +204,7 @@ while True:
         # Aizawa parameters
         alpha = 0.95
         beta = 0.7
-        gamma = 0.65
+        gamma = 0.6
         delta = 3.5
         epsilon = 0.25
         zeta  = 0.1
@@ -633,8 +633,13 @@ while True:
     elif attractor == 15:
         attractor = "Halvorsen"
 
+        dt = 0.002
+        integSteps = 20000 # t = 40
+        drawStride = 1 # Keep every drawStride-th point for drawing
+        pointsPerFrame = integSteps // drawStride // steps # Drawn points revealed per frame so the animation stays at steps frames
+
         # Halvorsen parameters
-        alpha = 1.89
+        alpha = 1.4 
 
         # Halvorsen integration for noobs
         def halvorsen(x, y, z, dt):
@@ -644,10 +649,12 @@ while True:
             return x + dx, y + dy, z + dz
 
         for i in range(numTraj):
-            trajectories[i][0] = initPos[i]
-            for j in range(1, steps):
+            fullTraj = np.zeros((integSteps, 3))
+            fullTraj[0] = initPos[i]
+            for j in range(1, integSteps):
                 x[i], y[i], z[i] = halvorsen(x[i], y[i], z[i], dt)
-                trajectories[i][j] = x[i], y[i], z[i]
+                fullTraj[j] = x[i], y[i], z[i]
+            trajectories[i] = fullTraj[::drawStride]
 
     # LIU-CHEN ATTRACTOR
     elif attractor == 16:
