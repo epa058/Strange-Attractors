@@ -21,16 +21,16 @@ export const ATTRACTORS = [
     equations: "ẋ = (z − b)x − dy\nẏ = dx + (z − b)y\nż = c + az − z³/3 − (x² + y²)(1 + ez) + fzx³",
     params: `const float a = 0.95;
 const float b = 0.7;
-const float c = 0.65;
+const float c = 0.6;
 const float d = 3.5;
 const float e = 0.25;
 const float f = 0.1;`,
     dx: `vec4((z - b)*x - d*y, d*x + (z - b)*y, c + a*z - z*z*z/3.0 - (x*x + y*y)*(1.0 + e*z) + f*z*x*x*x, 0.0)`,
-    period: 1.811, dtMax: 0.05, windowLoops: 150,
+    period: 1.795, dtMax: 0.05, windowLoops: 49,
     ic: [0.1, 0.0, 0.0, 0.0],
-    jitter: [0.00254, 0.00257, 0.00193, 0.001],
-    boundLo: [-9.0756, -9.11287, -5.99003, -3.0], boundHi: [8.67614, 8.89707, 7.51174, 3.0],
-    center: [-0.199727, -0.107808, 0.760674], radius: 2.045,
+    jitter: [0.00299, 0.00297, 0.00221, 0.001],
+    boundLo: [-10.4623, -10.3706, -7.00928, -3.0], boundHi: [10.4492, 10.452, 8.49169, 3.0],
+    center: [0.0211765, 0.0326682, 0.743213], radius: 2.287,
   },
   {
     name: "Anishchenko-Astakhov",
@@ -223,13 +223,13 @@ const float G = 1.0;`,
   {
     name: "Halvorsen",
     equations: "ẋ = −ax − 4y − 4z − y²\nẏ = −ay − 4z − 4x − z²\nż = −az − 4x − 4y − x²",
-    params: `const float a = 1.89;`,
+    params: `const float a = 1.4;`,
     dx: `vec4(-a*x - 4.0*y - 4.0*z - y*y, -a*y - 4.0*z - 4.0*x - z*z, -a*z - 4.0*x - 4.0*y - x*x, 0.0)`,
-    period: 1.565, dtMax: 0.05, windowLoops: 150,
+    period: 1.513, dtMax: 0.05, windowLoops: 20,
     ic: [1.0, 0.0, 0.0, 0.0],
-    jitter: [0.0185, 0.0185, 0.0185, 0.001],
-    boundLo: [-67.5113, -67.5113, -67.5113, -3.0], boundHi: [61.6909, 61.6909, 61.6909, 3.0],
-    center: [-2.90496, -2.90456, -2.90444], radius: 15.95,
+    jitter: [0.0197, 0.0197, 0.0197, 0.001],
+    boundLo: [-72.3277, -72.3531, -72.3358, -3.0], boundHi: [65.36, 65.388, 65.3667, 3.0],
+    center: [-3.29348, -3.36088, -3.20964], radius: 16.2,
   },
   {
     name: "Liu-Chen",
