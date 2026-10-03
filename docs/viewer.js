@@ -27,6 +27,7 @@ const settings = {
   size: 1,
   color: '#24a9ae',
   autoRotate: true,
+  equalAxes: false,   // stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])
   paused: false,
 };
 
@@ -197,7 +198,7 @@ function buildSimulation() {
   fadeIn = 0;
   buildPoints();
   pointsMat.uniforms.uCenter.value.set(...att.center);
-  pointsMat.uniforms.uInvRadius.value = 1 / att.radius;
+  updateScale();
   document.getElementById('equations').textContent = att.equations;
   clearAccumulation();
 }
@@ -241,15 +242,15 @@ function advance(frameSeconds) {
 const pointsScene = new THREE.Scene();
 const pointsMat = new THREE.ShaderMaterial({
   uniforms: {
-    texA: { value: null }, uCenter: { value: new THREE.Vector3() }, uInvRadius: { value: 1 }, uSize: { value: 1 },
+    texA: { value: null }, uCenter: { value: new THREE.Vector3() }, uScale: { value: new THREE.Vector3(1, 1, 1) }, uSize: { value: 1 },
   },
   vertexShader: `
 uniform sampler2D texA;
 uniform vec3 uCenter;
-uniform float uInvRadius;
+uniform vec3 uScale;
 uniform float uSize;
 void main() {
-  vec3 p = (texture2D(texA, position.xy).xyz - uCenter) * uInvRadius;
+  vec3 p = (texture2D(texA, position.xy).xyz - uCenter) * uScale;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   gl_PointSize = uSize;
 }`,
@@ -257,6 +258,20 @@ void main() {
   blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true,
 });
 let points = null;
+
+// True proportions: one scale for all axes. Equal axes: each axis scaled to the same size, with the
+// bounding box's diagonal kept the same so the attractor still fits the view.
+function updateScale() {
+  if (!att) return;
+  const s = pointsMat.uniforms.uScale.value;
+  if (settings.equalAxes) {
+    const k = 2 / Math.sqrt(3);
+    s.set(k / att.extent[0], k / att.extent[1], k / att.extent[2]);
+  } else {
+    s.setScalar(1 / att.radius);
+  }
+  clearAccumulation();
+}
 function buildPoints() {
   if (points && points.geometry.userData.side === settings.side) return;
   if (points) { pointsScene.remove(points); points.geometry.dispose(); }
@@ -412,6 +427,8 @@ function initPanel() {
   $('color').addEventListener('input', (e) => { settings.color = e.target.value; });
   $('autorotate').checked = settings.autoRotate;
   $('autorotate').addEventListener('change', (e) => { settings.autoRotate = e.target.checked; });
+  $('equalaxes').checked = settings.equalAxes;
+  $('equalaxes').addEventListener('change', (e) => { settings.equalAxes = e.target.checked; updateScale(); });
   $('pause').addEventListener('click', () => {
     settings.paused = !settings.paused;
     $('pause').textContent = settings.paused ? 'Play' : 'Pause';
