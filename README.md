@@ -34,6 +34,12 @@ python -m http.server
 
 (Opening `index.html` directly from disk doesn't work: browsers block pages opened that way from loading their scripts.)
 
+## Inspiration
+
+[https://chaoticatmospheres.com/mathrules-strange-attractors](https://chaoticatmospheres.com/mathrules-strange-attractors)
+[https://www.dynamicmath.xyz/strange-attractors/](https://www.dynamicmath.xyz/strange-attractors/)
+[https://www.cedrick.ai/posts/attractors.html](https://www.cedrick.ai/posts/attractors.html)
+
 ## License
 
 GNU General Public License v3.0
