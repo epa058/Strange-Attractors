@@ -1,6 +1,6 @@
 // Live strange attractor viewer.
 //
-// Optional thin lines mode: a few long trajectories are drawn as glowing lines instead (see "Thin lines mode").
+// The other view (the default): a few long trajectories drawn as glowing lines (see "Thin lines mode").
 //
 // A swarm of particles is moved along each attractor's differential equations on the GPU (RK4 steps in a
 // fragment shader, positions stored in float textures). Every frame the particles are drawn as single
@@ -30,8 +30,8 @@ const settings = {
   color: '#24a9ae',
   autoRotate: true,
   posterLook: false,  // Halvorsen: coarse Euler steps (a numerical artifact); Liu-Chen: show the start-up transient
-  equalAxes: false,   // stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])
-  lines: false,       // thin lines mode: a few long trajectories drawn as glowing lines instead of the particle cloud
+  equalAxes: true,    // stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])
+  lines: true,        // view: true = a few long trajectories drawn as thin glowing lines, false = density glow
   lineCount: 1,       // trajectories drawn in thin lines mode
   paused: false,
 };
@@ -239,7 +239,8 @@ function buildSimulation() {
   buildPoints();
   pointsMat.uniforms.uCenter.value.set(...framing().center);
   updateScale();
-  document.getElementById('equations').textContent = att.equations;
+  document.getElementById('equationText').textContent = att.equations;
+  document.getElementById('constants').textContent = att.constants;
   clearAccumulation();
   if (settings.lines) buildLines(); else lines = null;
 }
@@ -740,11 +741,13 @@ function initPanel() {
   $('autorotate').addEventListener('change', (e) => { settings.autoRotate = e.target.checked; });
   $('posterlook').checked = settings.posterLook;
   $('posterlook').addEventListener('change', (e) => { settings.posterLook = e.target.checked; buildSimulation(); });
-  $('linesmode').checked = settings.lines;
-  $('linesmode').addEventListener('change', (e) => {
-    settings.lines = e.target.checked; showLinesMode();
+  const setView = (useLines) => {
+    if (useLines === settings.lines) return;
+    settings.lines = useLines; showLinesMode();
     if (settings.lines) buildLines(); else { lines = null; clearAccumulation(); }
-  });
+  };
+  $('viewLines').addEventListener('click', () => setView(true));
+  $('viewGlow').addEventListener('click', () => setView(false));
   $('lineCount').value = String(settings.lineCount);
   $('lineCount').addEventListener('change', (e) => { settings.lineCount = Number(e.target.value); if (settings.lines) buildLines(); });
   showLinesMode();
@@ -769,7 +772,9 @@ function trailsLabel(v) {
 }
 function showLinesMode() {
   $('particlesBox').hidden = settings.lines;
-  $('lineCount').hidden = !settings.lines;
+  $('linesBox').hidden = !settings.lines;
+  $('viewLines').setAttribute('aria-pressed', String(settings.lines));
+  $('viewGlow').setAttribute('aria-pressed', String(!settings.lines));
   $('trailsValue').textContent = trailsLabel(settings.trails);
   if (settings.lines) setStatus('');
 }

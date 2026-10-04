@@ -1,6 +1,7 @@
 // Strange attractor definitions for the live viewer.
 //
 // Each entry describes one system. The equations are written in GLSL (the shader language the GPU runs):
+//   constants  the constants' values as shown in the panel
 //   params  constants used by the equations
 //   pre     optional helper variables (for example Chua's diode)
 //   dx      vec4 of derivatives (dx/dt, dy/dt, dz/dt, dw/dt) for the state (x, y, z, w)
@@ -22,6 +23,7 @@ export const ATTRACTORS = [
   {
     name: "Aizawa",
     equations: "ẋ = (z − b)x − dy\nẏ = dx + (z − b)y\nż = c + az − z³/3 − (x² + y²)(1 + ez) + fzx³",
+    constants: "a = 0.95, b = 0.7, c = 0.6, d = 3.5, e = 0.25, f = 0.1",
     params: `const float a = 0.95;
 const float b = 0.7;
 const float c = 0.6;
@@ -38,6 +40,7 @@ const float f = 0.1;`,
   {
     name: "Anishchenko-Astakhov",
     equations: "ẋ = μx + y − xz\nẏ = −x\nż = −ηz + η·I(x)·x²,  I(x) = 1 if x > 0 else 0",
+    constants: "μ = 1.2, η = 0.5",
     params: `const float mu = 1.2;
 const float eta = 0.5;`,
     pre: `float I = step(0.0, x);`,
@@ -51,6 +54,7 @@ const float eta = 0.5;`,
   {
     name: "Arneodo",
     equations: "ẋ = y\nẏ = z\nż = −ax − by − z + dx³",
+    constants: "a = −5.5, b = 3.5, d = −1",
     params: `const float a = -5.5;
 const float b = 3.5;
 const float d = -1.0;`,
@@ -64,6 +68,7 @@ const float d = -1.0;`,
   {
     name: "Burke-Shaw",
     equations: "ẋ = −s(x + y)\nẏ = −y − sxz\nż = sxy + v",
+    constants: "s = 10, v = 4.272",
     params: `const float s = 10.0;
 const float v = 4.272;`,
     dx: `vec4(-s*(x + y), -y - s*x*z, s*x*y + v, 0.0)`,
@@ -76,6 +81,7 @@ const float v = 4.272;`,
   {
     name: "Chen-Celikovsky",
     equations: "ẋ = a(y − x)\nẏ = (c − a)x − xz + cy\nż = xy − bz",
+    constants: "a = 35, b = 3, c = 28",
     params: `const float a = 35.0;
 const float b = 3.0;
 const float c = 28.0;`,
@@ -89,6 +95,7 @@ const float c = 28.0;`,
   {
     name: "Chen-Lee",
     equations: "ẋ = ax − yz\nẏ = by + xz\nż = cz + xy/3",
+    constants: "a = 5, b = −10, c = −0.38",
     params: `const float a = 5.0;
 const float b = -10.0;
 const float c = -0.38;`,
@@ -102,6 +109,7 @@ const float c = -0.38;`,
   {
     name: "Chua",
     equations: "ẋ = a(y − x − G(x))\nẏ = b(x − y + z)\nż = −cy\nG(x) = m₁x + ½(m₀ − m₁)(|x + 1| − |x − 1|)",
+    constants: "a = 15.6, b = 1, c = 25.58, m₀ = −8/7, m₁ = −5/7",
     params: `const float a = 15.6;
 const float b = 1.0;
 const float c = 25.58;
@@ -118,6 +126,7 @@ const float m1 = -0.7142857142857143;`,
   {
     name: "Coullet",
     equations: "ẋ = y\nẏ = z\nż = ax + by + cz + dx³",
+    constants: "a = 0.8, b = −1.1, c = −0.45, d = −1",
     params: `const float a = 0.8;
 const float b = -1.1;
 const float c = -0.45;
@@ -132,6 +141,7 @@ const float d = -1.0;`,
   {
     name: "Coupled Lorenz",
     equations: "Response (shown):\nẋ = σ(y − x) + k(x₁ − x)\nẏ = ρ₂x − y − xz\nż = xy − βz\nDrive:\nẋ₁ = σ(y₁ − x₁)\nẏ₁ = ρ₁x₁ − y₁ − x₁z₁\nż₁ = x₁y₁ − βz₁",
+    constants: "σ = 10, β = 8/3, ρ₁ = 35, ρ₂ = 1.15, k = 2.85",
     params: `const float sigma = 10.0;
 const float beta = 2.6666666666666665;
 const float rho1 = 35.0;
@@ -149,6 +159,7 @@ const float k = 2.85;`,
   {
     name: "Dadras",
     equations: "ẋ = y − ax + byz\nẏ = cy − xz + z\nż = dxy − ez",
+    constants: "a = 3, b = 2.7, c = 1.7, d = 2, e = 9",
     params: `const float a = 3.0;
 const float b = 2.7;
 const float c = 1.7;
@@ -164,6 +175,7 @@ const float e = 9.0;`,
   {
     name: "Four-Wing",
     equations: "ẋ = ax − byz\nẏ = −cy + xz\nż = kx − dz + xy",
+    constants: "a = 4, b = 6, c = 10, d = 5, k = 1",
     params: `const float a = 4.0;
 const float b = 6.0;
 const float c = 10.0;
@@ -179,6 +191,7 @@ const float k = 1.0;`,
   {
     name: "Generalized Chua (n=3)",
     equations: "ẋ = α(y − h(x))\nẏ = x − y + z\nż = −βy − γz\nh(x): piecewise-linear diode, 5 breakpoints (3 double scrolls)",
+    constants: "α = 9, β = 14.286, γ = 0\nh(x) slopes: −1/7, 2/7, −4/7, 2/7, −4/7, 2/7\nh(x) breakpoints: ±1, ±2.15, ±3.6, ±8.2, ±13",
     params: `const float alpha = 9.0;
 const float beta = 14.286;
 const float gamma = 0.0;
@@ -199,6 +212,7 @@ const float s5 = 0.2857142857142857;`,
   {
     name: "Genesio-Tesi",
     equations: "ẋ = y\nẏ = z\nż = −cx − by − az + x²",
+    constants: "a = 0.44, b = 1.1, c = 1",
     params: `const float a = 0.44;
 const float b = 1.1;
 const float c = 1.0;`,
@@ -212,6 +226,7 @@ const float c = 1.0;`,
   {
     name: "Hadley",
     equations: "ẋ = −y² − z² − ax + aF\nẏ = xy − bxz − y + G\nż = bxy + xz − z",
+    constants: "a = 0.25, b = 4, F = 8, G = 1",
     params: `const float a = 0.25;
 const float b = 4.0;
 const float F = 8.0;
@@ -226,6 +241,7 @@ const float G = 1.0;`,
   {
     name: "Halvorsen",
     equations: "ẋ = −ax − 4y − 4z − y²\nẏ = −ay − 4z − 4x − z²\nż = −az − 4x − 4y − x²",
+    constants: "a = 1.4",
     params: `const float a = 1.4;`,
     dx: `vec4(-a*x - 4.0*y - 4.0*z - y*y, -a*y - 4.0*z - 4.0*x - z*z, -a*z - 4.0*x - 4.0*y - x*x, 0.0)`,
     period: 1.513, dtMax: 0.05, windowLoops: 20,
@@ -238,6 +254,7 @@ const float G = 1.0;`,
   {
     name: "Liu-Chen",
     equations: "ẋ = ay + bx + cyz\nẏ = dy − z + exz\nż = fz + gxy",
+    constants: "a = 2.4, b = −3.78, c = 14, d = −11, e = 4, f = 5.8, g = −1",
     params: `const float a = 2.4;
 const float b = -3.78;
 const float c = 14.0;
@@ -256,6 +273,7 @@ const float g = -1.0;`,
   {
     name: "Lorenz",
     equations: "ẋ = σ(y − x)\nẏ = x(ρ − z) − y\nż = xy − βz",
+    constants: "σ = 10, ρ = 28, β = 8/3",
     params: `const float sigma = 10.0;
 const float rho = 28.0;
 const float beta = 2.6666666666666665;`,
@@ -269,6 +287,7 @@ const float beta = 2.6666666666666665;`,
   {
     name: "Lorenz Mod 1",
     equations: "ẋ = −ax + y² − z² + ac\nẏ = x(y − bz) + d\nż = −z + x(by + z)",
+    constants: "a = 0.1, b = 4, c = 14, d = 0.08",
     params: `const float a = 0.1;
 const float b = 4.0;
 const float c = 14.0;
@@ -283,6 +302,7 @@ const float d = 0.08;`,
   {
     name: "Lorenz Mod 2",
     equations: "ẋ = −ax + y² − z² + ac\nẏ = x(y − bz) + d\nż = −z + x(by + z)",
+    constants: "a = 0.9, b = 5, c = 9.9, d = 1",
     params: `const float a = 0.9;
 const float b = 5.0;
 const float c = 9.9;
@@ -297,6 +317,7 @@ const float d = 1.0;`,
   {
     name: "Lu Chen",
     equations: "ẋ = −abx/(a + b) − yz + c\nẏ = xz + ay\nż = bz + xy",
+    constants: "a = −10, b = −4, c = 18.1",
     params: `const float a = -10.0;
 const float b = -4.0;
 const float c = 18.1;`,
@@ -310,6 +331,7 @@ const float c = 18.1;`,
   {
     name: "Newton-Leipnik",
     equations: "ẋ = −ax + y + 10yz\nẏ = −x − 0.4y + 5xz\nż = bz − 5xy",
+    constants: "a = 0.4, b = 0.175",
     params: `const float a = 0.4;
 const float b = 0.175;`,
     dx: `vec4(-a*x + y + 10.0*y*z, -x - 0.4*y + 5.0*x*z, b*z - 5.0*x*y, 0.0)`,
@@ -322,6 +344,7 @@ const float b = 0.175;`,
   {
     name: "Nose-Hoover",
     equations: "ẋ = y\nẏ = −x + yz\nż = a − y²\n(starts in the chaotic sea; other starts lie on smooth tori)",
+    constants: "a = 1.5",
     params: `const float a = 1.5;`,
     dx: `vec4(y, -x + y*z, a - y*y, 0.0)`,
     period: 14.54, dtMax: 0.1, windowLoops: 70,
@@ -333,6 +356,7 @@ const float b = 0.175;`,
   {
     name: "Qi",
     equations: "ẋ = a(y − x) + yzw\nẏ = b(x + y) − xzw\nż = −cz + xyw\nẇ = −dw + xyz\n(4D, showing x, y, z; c = 8/3 instead of the poster's 1, which only gives a loop)",
+    constants: "a = 30, b = 10, c = 8/3, d = 10\nw starts at 1",
     params: `const float a = 30.0;
 const float b = 10.0;
 const float c = 2.6666666666666665;
@@ -347,6 +371,7 @@ const float d = 10.0;`,
   {
     name: "Qi-Chen",
     equations: "ẋ = a(y − x) + yz\nẏ = cx + y − xz\nż = xy − bz",
+    constants: "a = 38, b = 8/3, c = 80",
     params: `const float a = 38.0;
 const float b = 2.6666666666666665;
 const float c = 80.0;`,
@@ -360,6 +385,7 @@ const float c = 80.0;`,
   {
     name: "Rossler",
     equations: "ẋ = −(y + z)\nẏ = x + ay\nż = b + z(x − c)",
+    constants: "a = 0.2, b = 0.2, c = 5.7",
     params: `const float a = 0.2;
 const float b = 0.2;
 const float c = 5.7;`,
@@ -373,6 +399,7 @@ const float c = 5.7;`,
   {
     name: "Rucklidge",
     equations: "ẋ = −kx + ay − yz\nẏ = x\nż = −z + y²",
+    constants: "k = 2, a = 6.7",
     params: `const float k = 2.0;
 const float a = 6.7;`,
     dx: `vec4(-k*x + a*y - y*z, x, -z + y*y, 0.0)`,
@@ -385,6 +412,7 @@ const float a = 6.7;`,
   {
     name: "Sakarya",
     equations: "ẋ = −x + y + yz\nẏ = −x − y + axz\nż = z − bxy",
+    constants: "a = 0.4, b = 0.3",
     params: `const float a = 0.4;
 const float b = 0.3;`,
     dx: `vec4(-x + y + y*z, -x - y + a*x*z, z - b*x*y, 0.0)`,
@@ -397,6 +425,7 @@ const float b = 0.3;`,
   {
     name: "Shimizu-Morioka",
     equations: "ẋ = y\nẏ = (1 − z)x − ay\nż = x² − bz",
+    constants: "a = 0.75, b = 0.45",
     params: `const float a = 0.75;
 const float b = 0.45;`,
     dx: `vec4(y, (1.0 - z)*x - a*y, x*x - b*z, 0.0)`,
@@ -409,6 +438,7 @@ const float b = 0.45;`,
   {
     name: "Thomas",
     equations: "ẋ = sin y − bx\nẏ = sin z − by\nż = sin x − bz",
+    constants: "b = 0.208186",
     params: `const float b = 0.208186;`,
     dx: `vec4(sin(y) - b*x, sin(z) - b*y, sin(x) - b*z, 0.0)`,
     period: 12.69, dtMax: 0.1, windowLoops: 41,
@@ -420,6 +450,7 @@ const float b = 0.45;`,
   {
     name: "TSUCS1",
     equations: "ẋ = a(y − x) + dxz\nẏ = fy − xz\nż = bz + xy − ex²",
+    constants: "a = 40, b = 0.833, d = 0.5, e = 0.65, f = 20",
     params: `const float a = 40.0;
 const float b = 0.833;
 const float d = 0.5;
@@ -435,6 +466,7 @@ const float f = 20.0;`,
   {
     name: "TSUCS2",
     equations: "ẋ = a(y − x) + dxz\nẏ = bx − xz + fy\nż = cz + xy − ex²",
+    constants: "a = 40, b = 55, c = 11/6, d = 0.16, e = 0.65, f = 20",
     params: `const float a = 40.0;
 const float b = 55.0;
 const float c = 1.8333333333333333;
@@ -451,6 +483,7 @@ const float f = 20.0;`,
   {
     name: "Wang-Sun",
     equations: "ẋ = ax + cyz\nẏ = bx + dy − xz\nż = ez + fxy",
+    constants: "a = 0.2, b = −0.01, c = 1, d = −0.4, e = −1, f = −1",
     params: `const float a = 0.2;
 const float b = -0.01;
 const float c = 1.0;
@@ -467,6 +500,7 @@ const float f = -1.0;`,
   {
     name: "Wimol-Banlue",
     equations: "ẋ = y − x\nẏ = −z·tanh(x)\nż = −a + xy + |y|",
+    constants: "a = 2",
     params: `const float a = 2.0;`,
     dx: `vec4(y - x, -z*tanh(x), -a + x*y + abs(y), 0.0)`,
     period: 7.88, dtMax: 0.1, windowLoops: 20,
@@ -478,6 +512,7 @@ const float f = -1.0;`,
   {
     name: "Yu-Wang",
     equations: "ẋ = a(y − x)\nẏ = bx − cxz\nż = e^(xy) − dz",
+    constants: "a = 10, b = 40, c = 2, d = 2.5",
     params: `const float a = 10.0;
 const float b = 40.0;
 const float c = 2.0;

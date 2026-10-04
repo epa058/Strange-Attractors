@@ -30,8 +30,12 @@
     #show { position: fixed; top: 12px; left: 12px; }
     #error { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px;
              text-align: center; background: #000; color: #f0b6b6; font-size: 15px; }
-    #error[hidden], #show[hidden], #panel[hidden], #particlesBox[hidden], #lineCount[hidden] { display: none; }
-    #lineCount { width: auto; }
+    #error[hidden], #show[hidden], #panel[hidden], #particlesBox[hidden], #linesBox[hidden] { display: none; }
+    .seg { display: flex; margin: 0 0 4px; border: 1px solid #2c4245; border-radius: 7px; overflow: hidden; }
+    .seg button { flex: 1; border: none; border-radius: 0; padding: 6px 4px; background: #10191b; color: #9db3b6; }
+    .seg button + button { border-left: 1px solid #2c4245; }
+    .seg button[aria-pressed="true"] { background: #24555a; color: #e8f6f7; font-weight: 600; }
+    #constants { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(120, 200, 205, 0.15); color: #8fb0b3; }
     .hint { margin-top: 10px; color: #6f878a; font-size: 12px; }
     .note { margin: 4px 0 0 22px; color: #6f878a; font-size: 11.5px; line-height: 1.35; }
     #posterRow[hidden], #posterRow[hidden] + .note { display: none; }
@@ -51,6 +55,11 @@
   <div id="panel">
     <h1>Strange Attractors</h1>
 
+    <div class="seg" role="group" aria-label="View">
+      <button id="viewLines" aria-pressed="false" title="A few long trajectories drawn as thin glowing lines">Lines</button>
+      <button id="viewGlow" aria-pressed="false" title="Hundreds of thousands of particles; brighter where the system spends more time">Density glow</button>
+    </div>
+
     <label for="attractor">Attractor</label>
     <select id="attractor"></select>
 
@@ -60,6 +69,14 @@
         <option value="256">65,536</option>
         <option value="512">262,144</option>
         <option value="1024">1,048,576</option>
+      </select>
+    </div>
+    <div id="linesBox">
+      <label for="lineCount">Lines</label>
+      <select id="lineCount" title="Number of trajectories">
+        <option value="1">1</option>
+        <option value="3">3</option>
+        <option value="10">10</option>
       </select>
     </div>
 
@@ -81,14 +98,6 @@
     </div>
     <div class="note" id="posterNote"></div>
     <div class="row">
-      <label for="linesmode" title="Draw a few long trajectories as thin glowing lines, like a line plot"><input id="linesmode" type="checkbox"> Thin lines</label>
-      <select id="lineCount" title="Number of trajectories" hidden>
-        <option value="1">1 line</option>
-        <option value="3">3 lines</option>
-        <option value="10">10 lines</option>
-      </select>
-    </div>
-    <div class="row">
       <label for="equalaxes" title="Stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])"><input id="equalaxes" type="checkbox"> Equal axes</label>
     </div>
 
@@ -99,7 +108,7 @@
       <button id="hide">Hide (H)</button>
     </div>
 
-    <pre id="equations"></pre>
+    <div id="equations"><div id="equationText"></div><div id="constants"></div></div>
     <div id="status"></div>
     <div class="hint">Drag to rotate, scroll to zoom, right-drag to pan. Space pauses.</div>
   </div>
