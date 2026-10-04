@@ -37,7 +37,9 @@ python -m http.server
 ## Inspiration
 
 [https://chaoticatmospheres.com/mathrules-strange-attractors](https://chaoticatmospheres.com/mathrules-strange-attractors)
+
 [https://www.dynamicmath.xyz/strange-attractors/](https://www.dynamicmath.xyz/strange-attractors/)
+
 [https://www.cedrick.ai/posts/attractors.html](https://www.cedrick.ai/posts/attractors.html)
 
 ## License
