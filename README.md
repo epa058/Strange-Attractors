@@ -3,6 +3,7 @@
 ## Authors
 
 - Me
+- Claude (for the live viewer)
 
 ## Demo (Aizawa Attractor)
 
