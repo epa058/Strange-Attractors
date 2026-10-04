@@ -27,7 +27,7 @@ const settings = {
   size: 1,           // point size in CSS pixels (fixed)
   color: '#24a9ae',
   autoRotate: true,
-  posterLook: false,  // Halvorsen only: coarse Euler steps, which spiral into the centre (a numerical artifact)
+  posterLook: false,  // Halvorsen and Rayleigh-Benard: coarse Euler steps (a numerical artifact, as in many renders)
   equalAxes: false,   // stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])
   paused: false,
 };
@@ -79,6 +79,8 @@ let stepDebt = 0;      // fractional fixed-size steps carried between frames (po
 
 function usingEuler() { return !!(att && att.poster && settings.posterLook); }
 function stepSize() { return usingEuler() ? att.poster.dt : att.dtMax; }
+// Continual respawning (non-chaotic systems). Off in the poster look, where particles settle on the artifact cycle.
+function respawning() { return !!att.respawn && !usingEuler(); }
 // Escape box. With coarse Euler some particles blow up; catch them just outside the attractor so they
 // don't draw streaks on their way out.
 function boundsA() {
@@ -184,10 +186,12 @@ function buildSimulation() {
   for (let i = 0; i < N; i++) {
     let K;
     if (att.respawn) {
+      // Start anywhere in the box (spread out, so the poster look's particles land all along its cycle)
       const lo = att.respawn.boxLo, hi = att.respawn.boxHi;
       for (let c = 0; c < 3; c++) A[4 * i + c] = lo[c] + Math.random() * (hi[c] - lo[c]);
       A[4 * i + 3] = 0;
-      K = Math.floor(Math.random() / att.respawn.rate / h); // random ages, as in the steady state
+      if (respawning()) K = Math.floor(Math.random() / att.respawn.rate / h); // random ages, as in the steady state
+      else K = Math.floor((WARM_TRANSIENT_LOOPS + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / h);
     } else {
       for (let c = 0; c < 4; c++) A[4 * i + c] = att.ic[c] + att.jitter[c] * gauss();
       for (let c = 0; c < 3; c++) B[4 * i + c] = icB[c] + jB[c] * gauss();
@@ -218,6 +222,7 @@ function buildSimulation() {
   warm = { step: 0, total };
   stepDebt = 0;
   $('posterRow').hidden = !att.poster;
+  $('posterNote').textContent = att.poster ? att.poster.note : '';
   fadeIn = 0;
   buildPoints();
   pointsMat.uniforms.uCenter.value.set(...att.center);
@@ -232,7 +237,7 @@ function setSimUniforms(h, sub, step0, warming) {
     const u = v.material.uniforms;
     u.uH.value = h; u.uSub.value = sub; u.uStep0.value = step0; u.uWarm.value = warming ? 1 : 0; u.uSeed.value = seed;
     u.uEuler.value = usingEuler() ? 1 : 0;
-    u.uRespawnProb.value = (!warming && att.respawn) ? 1 - Math.exp(-att.respawn.rate * h * sub) : 0;
+    u.uRespawnProb.value = (!warming && respawning()) ? 1 - Math.exp(-att.respawn.rate * h * sub) : 0;
   }
 }
 

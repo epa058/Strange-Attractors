@@ -13,7 +13,8 @@
 //   ic      starting point (as in Code.py); particles start here plus a tiny random nudge (jitter)
 //   boundLo/boundHi  particles that leave this box (or become NaN) are respawned onto another particle
 //   respawn optional: continually respawn particles in a box (for systems that are not chaotic)
-//   poster  optional: Euler step size for the "poster look" option (a deliberate numerical artifact)
+//   poster  optional: Euler step size and description for the "poster look" option (a deliberate numerical artifact);
+//          systems with respawn stop respawning in the poster look
 //   center/radius    framing for the camera; extent: size along x, y, z (used by the equal-axes option)
 
 export const ATTRACTORS = [
@@ -230,7 +231,7 @@ const float G = 1.0;`,
     ic: [1.0, 0.0, 0.0, 0.0],
     jitter: [0.0197, 0.0197, 0.0197, 0.001],
     boundLo: [-72.3277, -72.3531, -72.3358, -3.0], boundHi: [65.36, 65.388, 65.3667, 3.0],
-    poster: { dt: 0.005 }, // optional coarse-Euler "poster look": a numerical artifact that spirals into the centre
+    poster: { dt: 0.005, note: "Coarse Euler steps (dt = 0.005), as in many renders. The spiral into the centre is a numerical artifact, not part of the true attractor." },
     center: [-3.29348, -3.36088, -3.20964], radius: 16.2, extent: [18.78, 18.74, 18.6],
   },
   {
@@ -366,6 +367,7 @@ const float b = 5.0;`,
     jitter: [0.03, 0.03, 0.025, 0.001],
     boundLo: [-105.0, -105.0, -75.0, -3.0], boundHi: [105.0, 105.0, 100.0, 3.0],
     respawn: {"rate": 0.05, "boxLo": [-15.0, -15.0, 0.0], "boxHi": [15.0, 15.0, 25.0]},
+    poster: { dt: 0.035, note: "Coarse Euler steps (dt = 0.035), as in many renders. They make the two fixed points unstable, so particles settle on a two-loop cycle instead. The loops are a numerical artifact; the true system spirals into the two points." },
     center: [0.0, 0.0, 12.5], radius: 24.62, extent: [30.0, 30.0, 25.0],
   },
   {
