@@ -7,7 +7,7 @@
 
 ## Demo (Aizawa Attractor)
 
-![](Animations/Thumbnail.gif)
+![](Animations/StrangeAttractors.gif)
 
 | Color             | Initial Position      |
 | ----------------- | --------------------- |
