@@ -17,7 +17,7 @@
 
 ## Live viewer
 
-[**Open the live viewer**](https://epa058.github.io/Strange-Attractors/): every attractor in 3D, running in your browser, which you can rotate and zoom. It has two views: *Lines* (the default) draws a few long trajectories as thin glowing lines, like a line plot, and *Density glow* moves hundreds of thousands of particles along the equations on the GPU, so brighter regions are where the system spends more time.
+[**Open the live viewer**](https://epa058.github.io/Strange-Attractors/): every attractor in 3D, running in your browser. It has two views: *Lines* draws a few long trajectories as thin glowing lines, and *Density glow* moves hundreds of thousands of particles along the equations on the GPU, so brighter regions are where the system spends more time.
 
 The viewer is in the `docs/` folder:
 
