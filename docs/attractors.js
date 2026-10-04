@@ -367,7 +367,7 @@ const float b = 5.0;`,
     jitter: [0.03, 0.03, 0.025, 0.001],
     boundLo: [-105.0, -105.0, -75.0, -3.0], boundHi: [105.0, 105.0, 100.0, 3.0],
     respawn: {"rate": 0.05, "boxLo": [-15.0, -15.0, 0.0], "boxHi": [15.0, 15.0, 25.0]},
-    poster: { dt: 0.035, note: "Coarse Euler steps (dt = 0.035), as in many renders. They make the two fixed points unstable, so particles settle on a two-loop cycle instead. The loops are a numerical artifact; the true system spirals into the two points." },
+    poster: { dt: 0.047, note: "Coarse Euler steps (dt = 0.047), as in many renders. They make the two fixed points unstable and turn the motion chaotic, so particles settle on nested loops instead. The loops are a numerical artifact; the true system spirals into the two points." },
     center: [0.0, 0.0, 12.5], radius: 24.62, extent: [30.0, 30.0, 25.0],
   },
   {
