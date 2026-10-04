@@ -530,8 +530,11 @@ function lineStart(L, s) {
     return;
   }
   if (rs) {
+    // Not chaotic (Rayleigh-Benard): start on the surface of the respawn box, so each line sweeps in from outside
     const lo = att.respawn.boxLo, hi = att.respawn.boxHi;
     for (let c = 0; c < 3; c++) s[c] = lo[c] + Math.random() * (hi[c] - lo[c]);
+    const face = Math.floor(Math.random() * 6), c = face >> 1;
+    s[c] = face & 1 ? hi[c] : lo[c];
     s[3] = 0;
     return;
   }
@@ -581,7 +584,11 @@ function putSegment(tr, t, a, b, idx) {
 // Advance every trajectory by `count` time steps. Each step writes one segment, or several where it moves fast.
 function addLineSamples(count, full = false) {
   const L = lines, geo = lineObj.geometry;
-  const rs = respawnSpec(), respawnProb = rs ? 1 - Math.exp(-rs.rate * L.sampleDt) : 0;
+  // Restarts: from the starting point at random times (start-up poster look); for systems that are not chaotic,
+  // as soon as the line has settled onto a fixed point (moving less than 1% of the radius per loop), so no time is
+  // spent drawing a dot.
+  const rs = respawnSpec(), respawnProb = rs && rs.fromIC ? 1 - Math.exp(-rs.rate * L.sampleDt) : 0;
+  const settle = rs && !rs.fromIC ? 0.01 * att.radius / att.period : 0, vel = new Float64Array(7);
   const prev = new Float64Array(7), mid = new Float64Array(7), h = L.h;
   // A trajectory that is blowing up (poster look only) takes huge steps before it leaves the escape box; hide those
   // segments so they don't draw straight streaks. (Not too strict: Rayleigh-Benard's coarse poster steps are
@@ -623,6 +630,10 @@ function addLineSamples(count, full = false) {
         }
       } else putSegment(tr, t, prev, s, idx);
       if (respawnProb > 0 && Math.random() < respawnProb) { lineStart(L, s); tr.broken = true; }
+      else if (settle > 0) {
+        L.f(s, vel);
+        if (Math.hypot(vel[0], vel[1], vel[2]) < settle) { lineStart(L, s); tr.broken = true; }
+      }
     }
   }
   // Upload only the slots that changed (one or two runs per trajectory, as the ring buffer wraps). Ranges add up
