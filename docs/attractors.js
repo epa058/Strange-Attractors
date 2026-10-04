@@ -13,9 +13,8 @@
 //          systems, whose particles would otherwise stay bunched along one short stretch of trajectory
 //   ic      starting point (as in Code.py); particles start here plus a tiny random nudge (jitter)
 //   boundLo/boundHi  particles that leave this box (or become NaN) are respawned onto another particle
-//   respawn optional: continually respawn particles in a box (for systems that are not chaotic)
 //   poster  optional: the "poster look" option, with a description. Either an Euler step size (dt; a deliberate
-//          numerical artifact, and systems with respawn stop respawning) or a restart rate (restartRate; particles
+//          numerical artifact) or a restart rate (restartRate; particles
 //          keep restarting from the starting point, so the start-up transient stays visible)
 //   center/radius    framing for the camera; extent: size along x, y, z (used by the equal-axes option)
 
@@ -357,21 +356,6 @@ const float c = 80.0;`,
     jitter: [0.177, 0.0831, 0.0779, 0.001],
     boundLo: [-617.69, -288.778, -191.057, -3.0], boundHi: [623.935, 292.724, 354.338, 3.0],
     center: [-1.78597, -1.08479, 78.3615], radius: 73.95, extent: [126.1, 54.23, 55.09],
-  },
-  {
-    name: "Rayleigh-Benard",
-    equations: "ẋ = −ax + ay\nẏ = rx − y − xz\nż = xy − bz\n(r = 12: spirals into two fixed points; particles are continually respawned)",
-    params: `const float a = 9.0;
-const float r = 12.0;
-const float b = 5.0;`,
-    dx: `vec4(-a*x + a*y, r*x - y - x*z, x*y - b*z, 0.0)`,
-    period: 0.7, dtMax: 0.01,
-    ic: [10.0, 10.0, 10.0, 0.0],
-    jitter: [0.03, 0.03, 0.025, 0.001],
-    boundLo: [-105.0, -105.0, -75.0, -3.0], boundHi: [105.0, 105.0, 100.0, 3.0],
-    respawn: {"rate": 0.05, "boxLo": [-15.0, -15.0, 0.0], "boxHi": [15.0, 15.0, 25.0]},
-    poster: { dt: 0.047, note: "Coarse Euler steps (dt = 0.047), as in many renders. They make the two fixed points unstable and turn the motion chaotic, so particles settle on nested loops instead. The loops are a numerical artifact; the true system spirals into the two points." },
-    center: [0.0, 0.0, 12.5], radius: 24.62, extent: [30.0, 30.0, 25.0],
   },
   {
     name: "Rossler",

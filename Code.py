@@ -30,19 +30,18 @@ while True:
     print("22: Nose-Hoover attractor")
     print("23: Qi attractor")
     print("24: Qi-Chen attractor")
-    print("25: Rayleigh-Benard attractor")
-    print("26: Rossler attractor")
-    print("27: Rucklidge attractor")
-    print("28: Sakarya attractor")
-    print("29: Shimizu-Morioka attractor")
-    print("30: Thomas attractor")
-    print("31: TSUCS1 attractor")
-    print("32: TSUCS2 attractor")
-    print("33: Wang-Sun attractor")
-    print("34: Wimol-Banlue attractor")
-    print("35: Yu-Wang attractor")
+    print("25: Rossler attractor")
+    print("26: Rucklidge attractor")
+    print("27: Sakarya attractor")
+    print("28: Shimizu-Morioka attractor")
+    print("29: Thomas attractor")
+    print("30: TSUCS1 attractor")
+    print("31: TSUCS2 attractor")
+    print("32: Wang-Sun attractor")
+    print("33: Wimol-Banlue attractor")
+    print("34: Yu-Wang attractor")
 
-    attractor = input("Enter an integer from 1 to 35: ")
+    attractor = input("Enter an integer from 1 to 34: ")
 
     try:
         attractor = int(attractor)
@@ -51,7 +50,7 @@ while True:
         print()
         continue
 
-    if attractor < 1 or attractor > 35:
+    if attractor < 1 or attractor > 34:
         print("Enter a valid integer.")
         print()
         continue
@@ -134,26 +133,24 @@ while True:
             elif attractor == 24:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
             elif attractor == 25:
-                a, b, c = input("Enter a comma-separated initial position (around 10, 10, 10 is recommended): ").split(',')
+                a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
             elif attractor == 26:
-                a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
-            elif attractor == 27:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 4.5 is recommended): ").split(',')
-            elif attractor == 28:
+            elif attractor == 27:
                 a, b, c = input("Enter a comma-separated initial position (around 1, -1, 1 is recommended): ").split(',')
-            elif attractor == 29:
+            elif attractor == 28:
                 a, b, c = input("Enter a comma-separated initial position (around 0.1, 0, 0 is recommended): ").split(',')
-            elif attractor == 30:
+            elif attractor == 29:
                 a, b, c = input("Enter a comma-separated initial position (around 1.1, 1.1, -0.01 is recommended): ").split(',')
-            elif attractor == 31:
+            elif attractor == 30:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
-            elif attractor == 32:
+            elif attractor == 31:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 and 1, 1, 1 are recommended): ").split(',')
-            elif attractor == 33:
+            elif attractor == 32:
                 a, b, c = input("Enter a comma-separated initial position (around 0.5, 0.1, 0.1 is recommended): ").split(',')
-            elif attractor == 34:
+            elif attractor == 33:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
-            elif attractor == 35:
+            elif attractor == 34:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
         except ValueError:
             print("Bruh.")
@@ -922,30 +919,8 @@ while True:
                 fullTraj[j] = x[i], y[i], z[i]
             trajectories[i] = fullTraj[::drawStride]
 
-    # RAYLEIGH-BENARD ATTRACTOR
-    elif attractor == 25:
-        attractor = "Rayleigh-Benard"
-
-        # Rayleigh-Benard parameters
-        alpha = 9.0
-        r = 12.0
-        beta = 5.0
-
-        # Rayleigh-Benard integration for noobs
-        def rayleigh_benard(x, y, z, dt):
-            dx = (- alpha * x + alpha * y) * dt
-            dy = (r * x - y - x * z) * dt
-            dz = (x * y - beta * z) * dt
-            return x + dx, y + dy, z + dz
-
-        for i in range(numTraj):
-            trajectories[i][0] = initPos[i]
-            for j in range(1, steps):
-                x[i], y[i], z[i] = rayleigh_benard(x[i], y[i], z[i], dt)
-                trajectories[i][j] = x[i], y[i], z[i]
-
     # ROSSLER ATTRACTOR
-    elif attractor == 26:
+    elif attractor == 25:
         attractor = "Rossler"
 
         dt = 0.005
@@ -974,7 +949,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # RUCKLIDGE ATTRACTOR
-    elif attractor == 27:
+    elif attractor == 26:
         attractor = "Rucklidge"
 
         dt = 0.02
@@ -1002,7 +977,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # SAKARYA ATTRACTOR
-    elif attractor == 28:
+    elif attractor == 27:
         attractor = "Sakarya"
 
         dt = 0.002
@@ -1030,7 +1005,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # SHIMIZU-MORIOKA ATTRACTOR
-    elif attractor == 29:
+    elif attractor == 28:
         attractor = "Shimizu-Morioka"
 
         dt = 0.05
@@ -1058,7 +1033,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # THOMAS ATTRACTOR
-    elif attractor == 30:
+    elif attractor == 29:
         attractor = "Thomas"
 
         dt = 0.05
@@ -1085,7 +1060,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # TSUCS1 ATTRACTOR
-    elif attractor == 31:
+    elif attractor == 30:
         attractor = "TSUCS1"
 
         dt = 0.001
@@ -1116,7 +1091,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # TSUCS2 ATTRACTOR
-    elif attractor == 32:
+    elif attractor == 31:
         attractor = "TSUCS2"
 
         dt = 0.0001 # Because TSUCS2 is huge (Euler blows up at larger dt)
@@ -1148,7 +1123,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # WANG-SUN ATTRACTOR
-    elif attractor == 33:
+    elif attractor == 32:
         attractor = "Wang-Sun"
 
         dt = 0.005
@@ -1180,7 +1155,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # WIMOL-BANLUE ATTRACTOR
-    elif attractor == 34:
+    elif attractor == 33:
         attractor = "Wimol-Banlue"
 
         dt = 0.05
@@ -1207,7 +1182,7 @@ while True:
             trajectories[i] = fullTraj[::drawStride]
 
     # YU-WANG ATTRACTOR
-    elif attractor == 35:
+    elif attractor == 34:
         attractor = "Yu-Wang"
 
         dt = 0.001
