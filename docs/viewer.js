@@ -81,10 +81,22 @@ let seed = 1;
 let N = 0;
 let stepDebt = 0;      // fractional fixed-size steps carried between frames (poster look)
 
-function usingEuler() { return !!(att && att.poster && settings.posterLook); }
+function usingEuler() { return !!(att && att.poster && att.poster.dt && settings.posterLook); }
 function stepSize() { return usingEuler() ? att.poster.dt : att.dtMax; }
-// Continual respawning (non-chaotic systems). Off in the poster look, where particles settle on the artifact cycle.
-function respawning() { return !!att.respawn && !usingEuler(); }
+// Continual restarts. Systems that are not chaotic restart particles anywhere in a box (off in their Euler poster
+// look, where particles settle on the artifact cycle). A start-up poster look (Liu-Chen) restarts them near the
+// starting point instead, so the transient on the way to the attractor stays visible.
+function respawnSpec() {
+  if (att.poster && att.poster.restartRate && settings.posterLook) return { rate: att.poster.restartRate, fromIC: true };
+  if (att.respawn && !usingEuler()) return { rate: att.respawn.rate, fromIC: false };
+  return null;
+}
+function respawning() { return !!respawnSpec(); }
+// Camera framing: a poster look may cover a bigger region than the attractor (Liu-Chen's start-up transient).
+function framing() {
+  const p = settings.posterLook && att.poster && att.poster.center ? att.poster : att;
+  return { center: p.center, radius: p.radius, extent: p.extent };
+}
 // Escape box. With coarse Euler some particles blow up; catch them just outside the attractor so they
 // don't draw streaks on their way out.
 function boundsA() {
@@ -107,6 +119,9 @@ uniform float uSeed;
 uniform float uRespawnProb;
 uniform vec3 uBoxLo;
 uniform vec3 uBoxHi;
+uniform int uRespawnIC;
+uniform vec4 uIC;
+uniform vec4 uICJit;
 uniform vec4 uBoundLo;
 uniform vec4 uBoundHi;
 uniform vec3 uBoundLoB;
@@ -158,8 +173,9 @@ void main() {
   uint s = hash(uint(gl_FragCoord.x) * 1973u + uint(gl_FragCoord.y) * 9277u + uint(uSeed) * 26699u);
   bool escaped = bad4(A, uBoundLo, uBoundHi)${escapedB};
   if (uRespawnProb > 0.0 && (rnd(s) < uRespawnProb || escaped)) {
-    // Systems that are not chaotic: continually restart particles anywhere in a box.
-    A = vec4(mix(uBoxLo, uBoxHi, vec3(rnd(s), rnd(s), rnd(s))), 0.0);
+    // Continual restarts: near the starting point (start-up poster look) or anywhere in a box (not chaotic).
+    if (uRespawnIC == 1) A = uIC + uICJit * (vec4(rnd(s), rnd(s), rnd(s), rnd(s)) - 0.5);
+    else A = vec4(mix(uBoxLo, uBoxHi, vec3(rnd(s), rnd(s), rnd(s))), 0.0);
   } else if (escaped) {
     // Particle blew up or left the attractor: move it next to a random other particle.
     vec2 src = (floor(vec2(rnd(s), rnd(s)) * resolution.xy) + 0.5) / resolution.xy;
@@ -187,14 +203,19 @@ function buildSimulation() {
   const h = stepSize();
   const icB = att.icB || [0, 0, 0], jB = att.jitterB || [0, 0, 0];
   let total = 0;
+  const rs = respawnSpec();
   for (let i = 0; i < N; i++) {
     let K;
-    if (att.respawn) {
+    if (rs && rs.fromIC) {
+      // Start-up poster look: start near the starting point, with random ages as in the steady state
+      for (let c = 0; c < 4; c++) A[4 * i + c] = att.ic[c] + att.jitter[c] * gauss();
+      K = Math.floor(Math.min(3, -Math.log(1 - Math.random())) / rs.rate / h);
+    } else if (att.respawn) {
       // Start anywhere in the box (spread out, so the poster look's particles land all along its cycle)
       const lo = att.respawn.boxLo, hi = att.respawn.boxHi;
       for (let c = 0; c < 3; c++) A[4 * i + c] = lo[c] + Math.random() * (hi[c] - lo[c]);
       A[4 * i + 3] = 0;
-      if (respawning()) K = Math.floor(Math.random() / att.respawn.rate / h); // random ages, as in the steady state
+      if (rs) K = Math.floor(Math.random() / rs.rate / h); // random ages, as in the steady state
       else K = Math.floor(((att.transientLoops || WARM_TRANSIENT_LOOPS) + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / h);
     } else {
       for (let c = 0; c < 4; c++) A[4 * i + c] = att.ic[c] + att.jitter[c] * gauss();
@@ -214,6 +235,9 @@ function buildSimulation() {
       uRespawnProb: { value: 0 },
       uBoxLo: { value: new THREE.Vector3(...(att.respawn ? att.respawn.boxLo : [0, 0, 0])) },
       uBoxHi: { value: new THREE.Vector3(...(att.respawn ? att.respawn.boxHi : [0, 0, 0])) },
+      uRespawnIC: { value: 0 },
+      uIC: { value: new THREE.Vector4(...att.ic) },
+      uICJit: { value: new THREE.Vector4(...att.jitter.map((j) => 2 * j)) },
       uBoundLo: { value: new THREE.Vector4(...boundsA()[0]) }, uBoundHi: { value: new THREE.Vector4(...boundsA()[1]) },
       uBoundLoB: { value: new THREE.Vector3(...(att.boundLoB || [-1, -1, -1])) },
       uBoundHiB: { value: new THREE.Vector3(...(att.boundHiB || [1, 1, 1])) },
@@ -229,7 +253,7 @@ function buildSimulation() {
   $('posterNote').textContent = att.poster ? att.poster.note : '';
   fadeIn = 0;
   buildPoints();
-  pointsMat.uniforms.uCenter.value.set(...att.center);
+  pointsMat.uniforms.uCenter.value.set(...framing().center);
   updateScale();
   document.getElementById('equations').textContent = att.equations;
   clearAccumulation();
@@ -242,7 +266,9 @@ function setSimUniforms(h, sub, step0, warming) {
     const u = v.material.uniforms;
     u.uH.value = h; u.uSub.value = sub; u.uStep0.value = step0; u.uWarm.value = warming ? 1 : 0; u.uSeed.value = seed;
     u.uEuler.value = usingEuler() ? 1 : 0;
-    u.uRespawnProb.value = (!warming && respawning()) ? 1 - Math.exp(-att.respawn.rate * h * sub) : 0;
+    const rs = respawnSpec();
+    u.uRespawnProb.value = (!warming && rs) ? 1 - Math.exp(-rs.rate * h * sub) : 0;
+    u.uRespawnIC.value = rs && rs.fromIC ? 1 : 0;
   }
 }
 
@@ -307,9 +333,10 @@ function updateScale() {
   const s = pointsMat.uniforms.uScale.value;
   if (settings.equalAxes) {
     const k = 2 / Math.sqrt(3);
-    s.set(k / att.extent[0], k / att.extent[1], k / att.extent[2]);
+    const ext = framing().extent;
+    s.set(k / ext[0], k / ext[1], k / ext[2]);
   } else {
-    s.setScalar(1 / att.radius);
+    s.setScalar(1 / framing().radius);
   }
   clearAccumulation();
 }
@@ -497,7 +524,12 @@ function lineEscaped(s) {
 
 // Put a trajectory at a fresh start and let it settle onto the attractor.
 function lineStart(L, s) {
-  if (respawning()) {
+  const rs = respawnSpec();
+  if (rs && rs.fromIC) { // start-up poster look: draw from the starting point, transient included
+    for (let c = 0; c < 4; c++) s[c] = att.ic[c] + att.jitter[c] * gauss();
+    return;
+  }
+  if (rs) {
     const lo = att.respawn.boxLo, hi = att.respawn.boxHi;
     for (let c = 0; c < 3; c++) s[c] = lo[c] + Math.random() * (hi[c] - lo[c]);
     s[3] = 0;
@@ -549,7 +581,7 @@ function putSegment(tr, t, a, b, idx) {
 // Advance every trajectory by `count` time steps. Each step writes one segment, or several where it moves fast.
 function addLineSamples(count, full = false) {
   const L = lines, geo = lineObj.geometry;
-  const respawnProb = respawning() ? 1 - Math.exp(-att.respawn.rate * L.sampleDt) : 0;
+  const rs = respawnSpec(), respawnProb = rs ? 1 - Math.exp(-rs.rate * L.sampleDt) : 0;
   const prev = new Float64Array(7), mid = new Float64Array(7), h = L.h;
   // A trajectory that is blowing up (poster look only) takes huge steps before it leaves the escape box; hide those
   // segments so they don't draw straight streaks.

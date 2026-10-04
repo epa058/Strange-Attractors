@@ -14,8 +14,9 @@
 //   ic      starting point (as in Code.py); particles start here plus a tiny random nudge (jitter)
 //   boundLo/boundHi  particles that leave this box (or become NaN) are respawned onto another particle
 //   respawn optional: continually respawn particles in a box (for systems that are not chaotic)
-//   poster  optional: Euler step size and description for the "poster look" option (a deliberate numerical artifact);
-//          systems with respawn stop respawning in the poster look
+//   poster  optional: the "poster look" option, with a description. Either an Euler step size (dt; a deliberate
+//          numerical artifact, and systems with respawn stop respawning) or a restart rate (restartRate; particles
+//          keep restarting from the starting point, so the start-up transient stays visible)
 //   center/radius    framing for the camera; extent: size along x, y, z (used by the equal-axes option)
 
 export const ATTRACTORS = [
@@ -250,6 +251,7 @@ const float g = -1.0;`,
     ic: [1.0, 3.0, 5.0, 0.0],
     jitter: [0.0179, 0.0158, 0.0083, 0.001],
     boundLo: [-71.757, -54.6962, -29.3113, -3.0], boundHi: [53.6596, 55.8007, 28.7578, 3.0],
+    poster: { restartRate: 0.04, note: "Particles keep restarting from the starting point (1, 3, 5), as in renders that draw one trajectory from its start. The knot on the x > 0 side is a start-up transient, which they leave for good after about 15 time units; only the part on the x < 0 side is the attractor.", center: [2.04, 0.116, 0.017], radius: 21.35, extent: [38.81, 15.09, 9.51] },
     center: [-7.27081, -0.0441928, -0.00761142], radius: 9.363, extent: [14.1, 10.6, 6.272],
   },
   {
