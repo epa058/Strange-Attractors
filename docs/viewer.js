@@ -1,5 +1,7 @@
 // Live strange attractor viewer.
 //
+// Optional thin lines mode: a few long trajectories are drawn as glowing lines instead (see "Thin lines mode").
+//
 // A swarm of particles is moved along each attractor's differential equations on the GPU (RK4 steps in a
 // fragment shader, positions stored in float textures). Every frame the particles are drawn as single
 // points and counted per pixel, the counts are blended into a fading buffer (the trails), and the result is
@@ -29,6 +31,8 @@ const settings = {
   autoRotate: true,
   posterLook: false,  // Halvorsen and Rayleigh-Benard: coarse Euler steps (a numerical artifact, as in many renders)
   equalAxes: false,   // stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])
+  lines: false,       // thin lines mode: a few long trajectories drawn as glowing lines instead of the particle cloud
+  lineCount: 1,       // trajectories drawn in thin lines mode
   paused: false,
 };
 
@@ -229,6 +233,7 @@ function buildSimulation() {
   updateScale();
   document.getElementById('equations').textContent = att.equations;
   clearAccumulation();
+  if (settings.lines) buildLines(); else lines = null;
 }
 
 function setSimUniforms(h, sub, step0, warming) {
@@ -350,12 +355,13 @@ toneMat.toneMapped = false;
 const accumScene = new THREE.Scene(); accumScene.add(new THREE.Mesh(quadGeo, accumMat));
 const toneScene = new THREE.Scene(); toneScene.add(new THREE.Mesh(quadGeo, toneMat));
 
-let frameRT = null, accRT = [null, null], accIndex = 0;
+let frameRT = null, lineRT = null, accRT = [null, null], accIndex = 0;
 function makeTargets() {
   const size = renderer.getDrawingBufferSize(new THREE.Vector2());
-  for (const t of [frameRT, ...accRT]) if (t) t.dispose();
+  for (const t of [frameRT, lineRT, ...accRT]) if (t) t.dispose();
   const opts = { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false };
   frameRT = new THREE.WebGLRenderTarget(size.x, size.y, { ...opts, type: THREE.HalfFloatType });
+  lineRT = new THREE.WebGLRenderTarget(size.x, size.y, { ...opts, type: THREE.HalfFloatType, samples: 4 }); // antialiased lines
   accRT = [0, 1].map(() => new THREE.WebGLRenderTarget(size.x, size.y, { ...opts, type: THREE.FloatType }));
   clearAccumulation();
 }
@@ -391,11 +397,223 @@ function draw() {
   toneMat.uniforms.uNorm.value = (size.x * size.y) / (N * ps * ps) / (zoom * zoom);
   toneMat.uniforms.uGlow.value = settings.glow;
   toneMat.uniforms.uFade.value = fadeIn;
-  const hex = parseInt(settings.color.slice(1), 16);
-  toneMat.uniforms.uTint.value.set((hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255);
+  setTint();
   renderer.setRenderTarget(null);
   renderer.render(toneScene, quadCam);
 }
+function setTint() {
+  const hex = parseInt(settings.color.slice(1), 16);
+  toneMat.uniforms.uTint.value.set((hex >> 16 & 255) / 255, (hex >> 8 & 255) / 255, (hex & 255) / 255);
+}
+
+// ---------------------------------------------------------------------------------------------------------
+// Thin lines mode: a few long trajectories drawn as glowing lines, like a matplotlib line plot.
+// These are integrated on the CPU in 64-bit floats (RK4, or Euler for the poster look) and kept as a ring
+// buffer of line segments per trajectory, so the history rotates with the view. Older segments fade out
+// over the trail length set by the Trails slider.
+
+const LINE_SAMPLES_PER_LOOP = 200;  // line points per loop around the attractor
+const LINE_MAX_LOOPS = 150;         // longest trail (Trails slider at maximum)
+const LINE_MIN_LOOPS = 2;           // shortest trail (Trails slider at 0)
+const LINE_CAPACITY = LINE_SAMPLES_PER_LOOP * LINE_MAX_LOOPS; // segments kept per trajectory
+const LINE_MAX_TRAJ = 10;
+const LINE_GAIN = 4;                // brightness of one line before the glow tone map
+
+// Turn the GLSL equations into a JavaScript function f(s, out) on the state s = (x, y, z, w, x1, y1, z1).
+function derivJS(a) {
+  const params = a.params.replace(/const float /g, 'const ');
+  const pre = (a.pre || '').replace(/(^|\n)\s*float /g, '$1const ');
+  const vec = (v) => v.trim().replace(/^vec4\(/, '').replace(/\)$/, '');
+  const body = `
+const { abs, exp, sin, cos, tanh, sqrt, pow } = Math;
+const step = (edge, v) => (v < edge ? 0 : 1);
+${params}
+return function (S_, O_) { // odd names so they can't clash with parameter names such as s
+  const x = S_[0], y = S_[1], z = S_[2], w = S_[3], x1 = S_[4], y1 = S_[5], z1 = S_[6];
+  ${pre}
+  const A_ = [${vec(a.dx)}];
+  const B_ = ${a.dxB ? `[${vec(a.dxB)}]` : '[0, 0, 0, 0]'};
+  O_[0] = A_[0]; O_[1] = A_[1]; O_[2] = A_[2]; O_[3] = A_[3]; O_[4] = B_[0]; O_[5] = B_[1]; O_[6] = B_[2];
+};`;
+  return new Function(body)();
+}
+
+const lineMat = new THREE.ShaderMaterial({
+  uniforms: { uCenter: pointsMat.uniforms.uCenter, uScale: pointsMat.uniforms.uScale, uHead: { value: 0 }, uLen: { value: 1 } },
+  vertexShader: `
+attribute float aIdx;
+uniform vec3 uCenter;
+uniform vec3 uScale;
+uniform float uHead;
+uniform float uLen;
+varying float vAlpha;
+void main() {
+  vec3 p = (position - uCenter) * uScale;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  float age = uHead - aIdx;
+  vAlpha = (age < 0.0 || age > uLen) ? 0.0 : 1.0 - smoothstep(0.6 * uLen, uLen, age);
+}`,
+  fragmentShader: `varying float vAlpha; void main() { if (vAlpha <= 0.0) discard; gl_FragColor = vec4(vAlpha); }`,
+  blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true,
+});
+const lineScene = new THREE.Scene();
+let lineObj = null;
+let lines = null; // { f, traj, n, h, sub, euler, sampleDt, head, debt }
+
+function buildLineGeometry() {
+  if (lineObj) return;
+  const verts = LINE_MAX_TRAJ * LINE_CAPACITY * 2;
+  const geo = new THREE.BufferGeometry();
+  const pos = new THREE.BufferAttribute(new Float32Array(verts * 3), 3);
+  const idx = new THREE.BufferAttribute(new Float32Array(verts).fill(-1e9), 1);
+  pos.setUsage(THREE.DynamicDrawUsage); idx.setUsage(THREE.DynamicDrawUsage);
+  geo.setAttribute('position', pos); geo.setAttribute('aIdx', idx);
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e6);
+  lineObj = new THREE.LineSegments(geo, lineMat);
+  lineObj.frustumCulled = false;
+  lineScene.add(lineObj);
+}
+
+function lineStep(L, s) {
+  const f = L.f, k1 = L.k1, k2 = L.k2, k3 = L.k3, k4 = L.k4, t = L.tmp, h = L.h;
+  if (L.euler) { f(s, k1); for (let i = 0; i < 7; i++) s[i] += h * k1[i]; return; }
+  f(s, k1); for (let i = 0; i < 7; i++) t[i] = s[i] + 0.5 * h * k1[i];
+  f(t, k2); for (let i = 0; i < 7; i++) t[i] = s[i] + 0.5 * h * k2[i];
+  f(t, k3); for (let i = 0; i < 7; i++) t[i] = s[i] + h * k3[i];
+  f(t, k4); for (let i = 0; i < 7; i++) s[i] += h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]);
+}
+
+function lineEscaped(s) {
+  const [lo, hi] = boundsA();
+  for (let c = 0; c < 4; c++) if (!(s[c] >= lo[c] && s[c] <= hi[c])) return true;
+  if (att.dxB) for (let c = 0; c < 3; c++) if (!(s[4 + c] >= att.boundLoB[c] && s[4 + c] <= att.boundHiB[c])) return true;
+  return false;
+}
+
+// Put a trajectory at a fresh start and let it settle onto the attractor.
+function lineStart(L, s) {
+  if (respawning()) {
+    const lo = att.respawn.boxLo, hi = att.respawn.boxHi;
+    for (let c = 0; c < 3; c++) s[c] = lo[c] + Math.random() * (hi[c] - lo[c]);
+    s[3] = 0;
+    return;
+  }
+  const icB = att.icB || [0, 0, 0], jB = att.jitterB || [0, 0, 0];
+  for (let tries = 0; tries < 5; tries++) {
+    for (let c = 0; c < 4; c++) s[c] = att.ic[c] + att.jitter[c] * gauss();
+    for (let c = 0; c < 3; c++) s[4 + c] = icB[c] + jB[c] * gauss();
+    const steps = Math.floor((WARM_TRANSIENT_LOOPS + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / L.h);
+    let ok = true;
+    for (let i = 0; i < steps; i++) {
+      lineStep(L, s);
+      if ((i & 63) === 0 && lineEscaped(s)) { ok = false; break; }
+    }
+    if (ok && !lineEscaped(s)) return;
+  }
+}
+
+function buildLines() {
+  buildLineGeometry();
+  const euler = usingEuler();
+  // Sample spacing: about LINE_SAMPLES_PER_LOOP points per loop; Euler takes whole poster-size steps.
+  let h, sub;
+  if (euler) { h = att.poster.dt; sub = Math.max(1, Math.round(att.period / LINE_SAMPLES_PER_LOOP / h)); }
+  else { const sdt = att.period / LINE_SAMPLES_PER_LOOP; sub = Math.ceil(sdt / att.dtMax); h = sdt / sub; }
+  const n = settings.lineCount;
+  const L = { f: derivJS(att), n, h, sub, euler, sampleDt: h * sub, head: 0, debt: 0, traj: [],
+              k1: new Float64Array(7), k2: new Float64Array(7), k3: new Float64Array(7), k4: new Float64Array(7), tmp: new Float64Array(7) };
+  for (let t = 0; t < n; t++) { const s = new Float64Array(7); lineStart(L, s); L.traj.push({ s, broken: true }); }
+  lines = L;
+  // Clear the buffer, then fill the whole history at once so the full trail shows straight away.
+  const geo = lineObj.geometry;
+  geo.attributes.aIdx.array.fill(-1e9);
+  geo.setDrawRange(0, n * LINE_CAPACITY * 2);
+  addLineSamples(LINE_CAPACITY, true);
+}
+
+// Advance every trajectory by `count` samples, writing one segment per sample.
+function addLineSamples(count, full = false) {
+  const L = lines, geo = lineObj.geometry, P = geo.attributes.position.array, I = geo.attributes.aIdx.array;
+  const respawnProb = respawning() ? 1 - Math.exp(-att.respawn.rate * L.sampleDt) : 0;
+  const prev = new Float64Array(7);
+  // A trajectory that is blowing up (poster look only) takes huge steps before it leaves the escape box; hide those
+  // segments so they don't draw straight streaks.
+  const maxSeg2 = L.euler ? Math.pow(0.2 * att.radius, 2) : Infinity;
+  for (let t = 0; t < L.n; t++) {
+    const tr = L.traj[t], s = tr.s;
+    for (let m = 0; m < count; m++) {
+      prev.set(s);
+      for (let i = 0; i < L.sub; i++) lineStep(L, s);
+      let broken = tr.broken || (s[0] - prev[0]) ** 2 + (s[1] - prev[1]) ** 2 + (s[2] - prev[2]) ** 2 > maxSeg2;
+      if (lineEscaped(s)) { hideEscapeTail(t, L.head + m); lineStart(L, s); broken = true; }
+      else if (respawnProb > 0 && Math.random() < respawnProb) { lineStart(L, s); broken = true; }
+      tr.broken = false;
+      const idx = L.head + m + 1, slot = t * LINE_CAPACITY + (idx % LINE_CAPACITY), v = 2 * slot;
+      P[3 * v] = prev[0]; P[3 * v + 1] = prev[1]; P[3 * v + 2] = prev[2];
+      P[3 * v + 3] = s[0]; P[3 * v + 4] = s[1]; P[3 * v + 5] = s[2];
+      I[v] = I[v + 1] = broken ? -1e9 : idx;
+    }
+  }
+  // Upload only the slots that changed (one or two runs per trajectory, as the ring buffer wraps). Ranges add up
+  // until the next render uploads them, so a rebuild followed by new samples in the same frame uploads both.
+  const pos = geo.attributes.position, ia = geo.attributes.aIdx;
+  if (full || count >= LINE_CAPACITY) {
+    pos.addUpdateRange(0, L.n * LINE_CAPACITY * 6); ia.addUpdateRange(0, L.n * LINE_CAPACITY * 2);
+  } else {
+    const a = (L.head + 1) % LINE_CAPACITY, b = (L.head + count) % LINE_CAPACITY;
+    const runs = a <= b ? [[a, b - a + 1]] : [[a, LINE_CAPACITY - a], [0, b + 1]];
+    for (let t = 0; t < L.n; t++) for (const [start, len] of runs) {
+      const v = 2 * (t * LINE_CAPACITY + start);
+      pos.addUpdateRange(3 * v, 6 * len); ia.addUpdateRange(v, 2 * len);
+    }
+  }
+  pos.needsUpdate = true; ia.needsUpdate = true;
+  L.head += count;
+}
+
+// When a trajectory escapes, also hide the run-up of its last segments outside the attractor's usual box.
+function hideEscapeTail(t, lastIdx) {
+  const P = lineObj.geometry.attributes.position.array, I = lineObj.geometry.attributes.aIdx.array;
+  const lo = att.center.map((c, k) => c - 0.5 * att.extent[k]), hi = att.center.map((c, k) => c + 0.5 * att.extent[k]);
+  for (let j = lastIdx; j > lastIdx - 2 * LINE_SAMPLES_PER_LOOP && j > 0; j--) {
+    const v = 2 * (t * LINE_CAPACITY + (j % LINE_CAPACITY));
+    let outside = false;
+    for (let c = 0; c < 3; c++) { const p = P[3 * (v + 1) + c]; if (!(p >= lo[c] && p <= hi[c])) outside = true; }
+    if (!outside) break;
+    I[v] = I[v + 1] = -1e9;
+  }
+  lineObj.geometry.attributes.aIdx.addUpdateRange(2 * t * LINE_CAPACITY, 2 * LINE_CAPACITY);
+}
+
+function advanceLines(frameSeconds) {
+  if (!lines || settings.paused || settings.speed === 0) return;
+  lines.debt += settings.speed * att.period / 2 * frameSeconds / lines.sampleDt;
+  const count = Math.min(LINE_CAPACITY, Math.floor(lines.debt));
+  lines.debt -= count;
+  if (count > 0) addLineSamples(count);
+}
+
+function lineTrailLoops() {
+  const f = settings.trails / 0.98;
+  return LINE_MIN_LOOPS + (LINE_MAX_LOOPS - LINE_MIN_LOOPS) * f * f;
+}
+
+function drawLines() {
+  lineMat.uniforms.uHead.value = lines ? lines.head : 0;
+  lineMat.uniforms.uLen.value = lines ? Math.min(LINE_CAPACITY - 1, lineTrailLoops() * att.period / lines.sampleDt) : 1;
+  renderer.setRenderTarget(lineRT);
+  renderer.setClearColor(0x000000, 0);
+  renderer.clear();
+  renderer.render(lineScene, camera);
+  toneMat.uniforms.tAcc.value = lineRT.texture;
+  toneMat.uniforms.uNorm.value = LINE_GAIN;
+  toneMat.uniforms.uGlow.value = settings.glow;
+  toneMat.uniforms.uFade.value = 1;
+  setTint();
+  renderer.setRenderTarget(null);
+  renderer.render(toneScene, quadCam);
+}
+
 
 // ---------------------------------------------------------------------------------------------------------
 // Main loop
@@ -408,9 +626,14 @@ function frame(timestamp) {
   const dt = Math.min(timer.getDelta(), 0.05);
   controls.autoRotate = settings.autoRotate && !settings.paused;
   controls.update();
-  advance(dt);
-  if (!warm && fadeIn < 1) fadeIn = Math.min(1, fadeIn + dt / 0.6);
-  draw();
+  if (settings.lines) {
+    advanceLines(dt);
+    drawLines();
+  } else {
+    advance(dt);
+    if (!warm && fadeIn < 1) fadeIn = Math.min(1, fadeIn + dt / 0.6);
+    draw();
+  }
   fpsFrames++; fpsTime += dt;
   if (fpsTime > 1) { document.getElementById('fps').textContent = `${Math.round(fpsFrames / fpsTime)} fps`; fpsFrames = 0; fpsTime = 0; }
   requestAnimationFrame(frame);
@@ -456,7 +679,7 @@ function initPanel() {
     show();
   };
   bind('speed', 'speed', (v) => v.toFixed(2) + '×');
-  bind('trails', 'trails', (v) => v === 0 ? 'off' : v.toFixed(2));
+  bind('trails', 'trails', trailsLabel);
   bind('glow', 'glow', (v) => v.toPrecision(2), (s) => Math.pow(10, Number(s)), (v) => Math.log10(v));
   $('color').value = settings.color;
   $('color').addEventListener('input', (e) => { settings.color = e.target.value; });
@@ -464,6 +687,14 @@ function initPanel() {
   $('autorotate').addEventListener('change', (e) => { settings.autoRotate = e.target.checked; });
   $('posterlook').checked = settings.posterLook;
   $('posterlook').addEventListener('change', (e) => { settings.posterLook = e.target.checked; buildSimulation(); });
+  $('linesmode').checked = settings.lines;
+  $('linesmode').addEventListener('change', (e) => {
+    settings.lines = e.target.checked; showLinesMode();
+    if (settings.lines) buildLines(); else { lines = null; clearAccumulation(); }
+  });
+  $('lineCount').value = String(settings.lineCount);
+  $('lineCount').addEventListener('change', (e) => { settings.lineCount = Number(e.target.value); if (settings.lines) buildLines(); });
+  showLinesMode();
   $('equalaxes').checked = settings.equalAxes;
   $('equalaxes').addEventListener('change', (e) => { settings.equalAxes = e.target.checked; updateScale(); });
   $('pause').addEventListener('click', () => {
@@ -478,6 +709,16 @@ function initPanel() {
     if (e.key === 'h' || e.key === 'H') togglePanel();
     if (e.key === ' ') { e.preventDefault(); $('pause').click(); }
   });
+}
+function trailsLabel(v) {
+  if (settings.lines) return Math.round(lineTrailLoops()) + ' loops';
+  return v === 0 ? 'off' : v.toFixed(2);
+}
+function showLinesMode() {
+  $('particlesBox').hidden = settings.lines;
+  $('lineCount').hidden = !settings.lines;
+  $('trailsValue').textContent = trailsLabel(settings.trails);
+  if (settings.lines) setStatus('');
 }
 function togglePanel() {
   const p = $('panel'); p.hidden = !p.hidden;
@@ -498,7 +739,9 @@ requestAnimationFrame(frame);
 window.viewer = {
   select: (name) => selectAttractor(typeof name === 'number' ? name : ATTRACTORS.findIndex((a) => a.name === name)),
   settings,
-  isSettling: () => warm !== null,
+  isSettling: () => !settings.lines && warm !== null,
+  lineInfo: () => lines && { head: lines.head, n: lines.n, sampleDt: lines.sampleDt, euler: lines.euler,
+                             states: lines.traj.map((t) => Array.from(t.s)) },
   readParticles: (count = 1024) => {
     const rt = gpu.getCurrentRenderTarget(varA), side = settings.side;
     const rows = Math.min(side, Math.ceil(count / side)), buf = new Float32Array(side * rows * 4);

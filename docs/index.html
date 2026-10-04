@@ -30,7 +30,8 @@
     #show { position: fixed; top: 12px; left: 12px; }
     #error { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 40px;
              text-align: center; background: #000; color: #f0b6b6; font-size: 15px; }
-    #error[hidden], #show[hidden], #panel[hidden] { display: none; }
+    #error[hidden], #show[hidden], #panel[hidden], #particlesBox[hidden], #lineCount[hidden] { display: none; }
+    #lineCount { width: auto; }
     .hint { margin-top: 10px; color: #6f878a; font-size: 12px; }
     .note { margin: 4px 0 0 22px; color: #6f878a; font-size: 11.5px; line-height: 1.35; }
     #posterRow[hidden], #posterRow[hidden] + .note { display: none; }
@@ -53,12 +54,14 @@
     <label for="attractor">Attractor</label>
     <select id="attractor"></select>
 
-    <label for="particles">Particles</label>
-    <select id="particles">
-      <option value="256">65,536</option>
-      <option value="512">262,144</option>
-      <option value="1024">1,048,576</option>
-    </select>
+    <div id="particlesBox">
+      <label for="particles">Particles</label>
+      <select id="particles">
+        <option value="256">65,536</option>
+        <option value="512">262,144</option>
+        <option value="1024">1,048,576</option>
+      </select>
+    </div>
 
     <label for="speed">Speed <span id="speedValue"></span></label>
     <input id="speed" type="range" min="0" max="4" step="0.05">
@@ -77,6 +80,14 @@
       <label for="posterlook"><input id="posterlook" type="checkbox"> Poster look</label>
     </div>
     <div class="note" id="posterNote"></div>
+    <div class="row">
+      <label for="linesmode" title="Draw a few long trajectories as thin glowing lines, like a line plot"><input id="linesmode" type="checkbox"> Thin lines</label>
+      <select id="lineCount" title="Number of trajectories" hidden>
+        <option value="1">1 line</option>
+        <option value="3">3 lines</option>
+        <option value="10">10 lines</option>
+      </select>
+    </div>
     <div class="row">
       <label for="equalaxes" title="Stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])"><input id="equalaxes" type="checkbox"> Equal axes</label>
     </div>

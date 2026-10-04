@@ -17,7 +17,7 @@
 
 ## Live viewer
 
-[**Open the live viewer**](https://epa058.github.io/Strange-Attractors/): a glowing particle cloud for each attractor that you can rotate, running in your browser. About half a million particles follow the equations on the GPU, and brighter regions are where the system spends more time.
+[**Open the live viewer**](https://epa058.github.io/Strange-Attractors/): a glowing particle cloud for each attractor that you can rotate, running in your browser. About half a million particles follow the equations on the GPU, and brighter regions are where the system spends more time. The *Thin lines* option draws a few long trajectories as glowing lines instead, like a line plot.
 
 The viewer is in the `docs/` folder:
 
