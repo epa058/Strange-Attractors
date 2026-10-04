@@ -15,7 +15,7 @@ import { ATTRACTORS, derivGLSL } from './attractors.js';
 // ---------------------------------------------------------------------------------------------------------
 // Settings
 
-const WARM_TRANSIENT_LOOPS = 10; // every particle first follows the trajectory from the starting point for this long
+const WARM_TRANSIENT_LOOPS = 10; // every particle first follows the trajectory from the starting point for this long (per attractor: transientLoops)
 const WARM_WINDOW_LOOPS = 20;    // then stops at a random time within this window (per attractor: windowLoops)
 const MAX_SUBSTEPS = 64;         // RK4 steps per compute pass (passes are repeated when more are needed)
 const WARM_STEP_BUDGET = 1e8;    // particle-steps per frame while warming up
@@ -195,11 +195,11 @@ function buildSimulation() {
       for (let c = 0; c < 3; c++) A[4 * i + c] = lo[c] + Math.random() * (hi[c] - lo[c]);
       A[4 * i + 3] = 0;
       if (respawning()) K = Math.floor(Math.random() / att.respawn.rate / h); // random ages, as in the steady state
-      else K = Math.floor((WARM_TRANSIENT_LOOPS + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / h);
+      else K = Math.floor(((att.transientLoops || WARM_TRANSIENT_LOOPS) + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / h);
     } else {
       for (let c = 0; c < 4; c++) A[4 * i + c] = att.ic[c] + att.jitter[c] * gauss();
       for (let c = 0; c < 3; c++) B[4 * i + c] = icB[c] + jB[c] * gauss();
-      K = Math.floor((WARM_TRANSIENT_LOOPS + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / h);
+      K = Math.floor(((att.transientLoops || WARM_TRANSIENT_LOOPS) + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / h);
     }
     B[4 * i + 3] = K;
     if (K > total) total = K;
@@ -507,7 +507,7 @@ function lineStart(L, s) {
   for (let tries = 0; tries < 5; tries++) {
     for (let c = 0; c < 4; c++) s[c] = att.ic[c] + att.jitter[c] * gauss();
     for (let c = 0; c < 3; c++) s[4 + c] = icB[c] + jB[c] * gauss();
-    const steps = Math.floor((WARM_TRANSIENT_LOOPS + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / L.h);
+    const steps = Math.floor(((att.transientLoops || WARM_TRANSIENT_LOOPS) + Math.random() * (att.windowLoops || WARM_WINDOW_LOOPS)) * att.period / L.h);
     let ok = true;
     for (let i = 0; i < steps; i++) {
       lineStep(L, s);

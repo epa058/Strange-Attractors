@@ -8,6 +8,7 @@
 // The equations match Code.py. The remaining fields are numerical settings:
 //   period  typical time for one loop around the attractor (sets the playback speed)
 //   dtMax   largest RK4 step that keeps the attractor's shape and chaos in 32-bit floats
+//   transientLoops  optional: loops every particle runs from the starting point before the window (default 10)
 //   windowLoops  particles stop warming up at random times over this many loops; longer for weakly chaotic
 //          systems, whose particles would otherwise stay bunched along one short stretch of trajectory
 //   ic      starting point (as in Code.py); particles start here plus a tiny random nudge (jitter)
@@ -242,14 +243,14 @@ const float b = -3.78;
 const float c = 14.0;
 const float d = -11.0;
 const float e = 4.0;
-const float f = 5.58;
+const float f = 5.8;
 const float g = -1.0;`,
     dx: `vec4(a*y + b*x + c*y*z, d*y - z + e*x*z, f*z + g*x*y, 0.0)`,
-    period: 0.7959, dtMax: 0.02, windowLoops: 41,
+    period: 0.7776, dtMax: 0.01, windowLoops: 20, transientLoops: 120,
     ic: [1.0, 3.0, 5.0, 0.0],
-    jitter: [0.0161, 0.014, 0.00746, 0.001],
-    boundLo: [-64.5269, -48.9132, -26.0927, -3.0], boundHi: [48.0471, 48.8358, 26.108, 3.0],
-    center: [-6.82874, 0.160071, -0.121358], radius: 8.707, extent: [13.08, 9.87, 5.903],
+    jitter: [0.0179, 0.0158, 0.0083, 0.001],
+    boundLo: [-71.757, -54.6962, -29.3113, -3.0], boundHi: [53.6596, 55.8007, 28.7578, 3.0],
+    center: [-7.27081, -0.0441928, -0.00761142], radius: 9.363, extent: [14.1, 10.6, 6.272],
   },
   {
     name: "Lorenz",

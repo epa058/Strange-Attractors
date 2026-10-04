@@ -660,9 +660,9 @@ while True:
     elif attractor == 16:
         attractor = "Liu-Chen"
 
-        dt = 0.001
-        integSteps = 72000 # t = 72
-        drawStride = 3 # Keep every drawStride-th point for drawing
+        dt = 0.0002 # Euler blows up about 1 run in 10 at dt = 0.001
+        integSteps = 360000 # t = 72
+        drawStride = 15 # Keep every drawStride-th point for drawing
         pointsPerFrame = integSteps // drawStride // steps # Drawn points revealed per frame so the animation stays at steps frames
 
         # Liu-Chen parameters
@@ -671,7 +671,7 @@ while True:
         gamma = 14.0
         delta = -11.0
         epsilon = 4.0
-        zeta = 5.58
+        zeta = 5.8 # 5.58 is in a periodic window: the chaos dies out onto a single loop after a while
         eta = -1.0
 
         # Liu-Chen integration for noobs
