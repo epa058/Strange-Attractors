@@ -584,8 +584,9 @@ function addLineSamples(count, full = false) {
   const rs = respawnSpec(), respawnProb = rs ? 1 - Math.exp(-rs.rate * L.sampleDt) : 0;
   const prev = new Float64Array(7), mid = new Float64Array(7), h = L.h;
   // A trajectory that is blowing up (poster look only) takes huge steps before it leaves the escape box; hide those
-  // segments so they don't draw straight streaks.
-  const maxSeg2 = L.euler ? Math.pow(0.2 * att.radius, 2) : Infinity;
+  // segments so they don't draw straight streaks. (Not too strict: Rayleigh-Benard's coarse poster steps are
+  // normally up to 0.3 x its radius long; blow-ups grow fast, and hideEscapeTail catches the rest.)
+  const maxSeg2 = L.euler ? Math.pow(0.5 * att.radius, 2) : Infinity;
   const starts = [];
   for (let t = 0; t < L.n; t++) {
     const tr = L.traj[t], s = tr.s;
