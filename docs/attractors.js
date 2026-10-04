@@ -329,19 +329,17 @@ const float b = 0.175;`,
   },
   {
     name: "Qi",
-    equations: "ẋ = a(y − x) + yz\nẏ = b(x + y) − xz\nż = −cz − ew + xy\nẇ = −dw + fz + xy   (4D, showing x, y, z)",
-    params: `const float a = 50.0;
-const float b = 24.0;
-const float c = 13.0;
-const float d = 8.0;
-const float e = 33.0;
-const float f = 30.0;`,
-    dx: `vec4(a*(y - x) + y*z, b*(x + y) - x*z, -c*z - e*w + x*y, -d*w + f*z + x*y)`,
-    period: 0.0919, dtMax: 0.001, windowLoops: 20,
-    ic: [0.1, 0.1, 0.1, 1.0],
-    jitter: [0.692, 0.785, 1.57, 2.38],
-    boundLo: [-2421.7, -2743.99, -5870.45, -7812.08], boundHi: [2425.32, 2747.75, 5143.11, 8851.99],
-    center: [-1.68391, 13.8683, -276.409], radius: 696.9, extent: [457.9, 461.2, 1233.0],
+    equations: "ẋ = a(y − x) + yzw\nẏ = b(x + y) − xzw\nż = −cz + xyw\nẇ = −dw + xyz\n(4D, showing x, y, z; c = 8/3 instead of the poster's 1, which only gives a loop)",
+    params: `const float a = 30.0;
+const float b = 10.0;
+const float c = 2.6666666666666665;
+const float d = 10.0;`,
+    dx: `vec4(a*(y - x) + y*z*w, b*(x + y) - x*z*w, -c*z + x*y*w, -d*w + x*y*z)`,
+    period: 0.352, dtMax: 0.002, windowLoops: 20,
+    ic: [1.0, 1.0, 1.0, 1.0],
+    jitter: [0.0235, 0.0176, 0.0109, 0.0107],
+    boundLo: [-82.0435, -61.3569, -31.1372, -31.9118], boundHi: [82.5804, 61.7529, 45.25, 42.6962],
+    center: [-0.103586, -0.0728523, 6.2835], radius: 10.49, extent: [15.06, 12.03, 8.309],
   },
   {
     name: "Qi-Chen",

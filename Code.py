@@ -130,7 +130,7 @@ while True:
             elif attractor == 22:
                 a, b, c = input("Enter a comma-separated initial position (around 0, 5, 0 is recommended): ").split(',')
             elif attractor == 23:
-                a, b, c = input("Enter a comma-separated initial position (around 0.1, 0.1, 0.1 is recommended): ").split(',')
+                a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
             elif attractor == 24:
                 a, b, c = input("Enter a comma-separated initial position (around 1, 1, 1 is recommended): ").split(',')
             elif attractor == 25:
@@ -861,27 +861,27 @@ while True:
     elif attractor == 23:
         attractor = "Qi"
 
-        dt = 0.0001
-        integSteps = 100000 # t = 10
-        drawStride = 5 # Keep every drawStride-th point for drawing
+        dt = 0.0001 # Euler blows up at dt = 0.0005
+        integSteps = 200000 # t = 20
+        drawStride = 10 # Keep every drawStride-th point for drawing
         pointsPerFrame = integSteps // drawStride // steps # Drawn points revealed per frame so the animation stays at steps frames
 
         # Qi is 4D: the fourth variable w starts at 1. Only (x, y, z) is plotted.
+        # Equations from the chaoticatmospheres poster, but with gamma = 8/3 instead of the printed 1:
+        # at gamma = 1 the system settles onto a periodic loop, at 8/3 it is strongly chaotic.
 
         # Qi parameters
-        alpha = 50.0
-        beta = 24.0
-        gamma = 13.0
-        delta = 8.0
-        epsilon = 33.0
-        zeta = 30.0
+        alpha = 30.0
+        beta = 10.0
+        gamma = 8.0 / 3.0
+        delta = 10.0
 
         # Qi integration for noobs
         def qi(x, y, z, w, dt):
-            dx = (alpha * (y - x) + y * z) * dt
-            dy = (beta * (x + y) - x * z) * dt
-            dz = (- gamma * z - epsilon * w + x * y) * dt
-            dw = (- delta * w + zeta * z + x * y) * dt
+            dx = (alpha * (y - x) + y * z * w) * dt
+            dy = (beta * (x + y) - x * z * w) * dt
+            dz = (- gamma * z + x * y * w) * dt
+            dw = (- delta * w + x * y * z) * dt
             return x + dx, y + dy, z + dz, w + dw
 
         for i in range(numTraj):
