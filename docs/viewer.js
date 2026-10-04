@@ -24,9 +24,10 @@ const settings = {
   speed: 0.5,         // 1 = one loop around the attractor every two seconds
   trails: 0.9,        // fraction of the previous frame kept
   glow: 0.15,
-  size: 1,
+  size: 1,           // point size in CSS pixels (fixed)
   color: '#24a9ae',
   autoRotate: true,
+  posterLook: false,  // Halvorsen only: coarse Euler steps, which spiral into the centre (a numerical artifact)
   equalAxes: false,   // stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])
   paused: false,
 };
@@ -74,6 +75,18 @@ let warm = null;       // { step, total } while warming up, otherwise null
 let fadeIn = 0;        // 0..1 brightness ramp after warm-up
 let seed = 1;
 let N = 0;
+let stepDebt = 0;      // fractional fixed-size steps carried between frames (poster look)
+
+function usingEuler() { return !!(att && att.poster && settings.posterLook); }
+function stepSize() { return usingEuler() ? att.poster.dt : att.dtMax; }
+// Escape box. With coarse Euler some particles blow up; catch them just outside the attractor so they
+// don't draw streaks on their way out.
+function boundsA() {
+  if (!usingEuler()) return [att.boundLo, att.boundHi];
+  const lo = att.boundLo.slice(), hi = att.boundHi.slice();
+  for (let c = 0; c < 3; c++) { lo[c] = att.center[c] - 0.65 * att.extent[c]; hi[c] = att.center[c] + 0.65 * att.extent[c]; }
+  return [lo, hi];
+}
 
 function computeShader(a, output) {
   const usesB = !!a.dxB;
@@ -83,6 +96,7 @@ uniform float uH;
 uniform int uSub;
 uniform float uStep0;
 uniform int uWarm;
+uniform int uEuler;
 uniform float uSeed;
 uniform float uRespawnProb;
 uniform vec3 uBoxLo;
@@ -106,6 +120,13 @@ void rk4(inout vec4 A, inout vec4 B, float h) {
   B.xyz += h / 6.0 * (k1b.xyz + 2.0 * k2b.xyz + 2.0 * k3b.xyz + k4b.xyz);
 }
 
+void euler(inout vec4 A, inout vec4 B, float h) {
+  vec4 dA, dB;
+  deriv(A, B, dA, dB);
+  A += h * dA;
+  B.xyz += h * dB.xyz;
+}
+
 uint hash(uint v) {
   v ^= v >> 16; v *= 0x7feb352dU; v ^= v >> 15; v *= 0x846ca68bU; v ^= v >> 16;
   return v;
@@ -124,7 +145,7 @@ void main() {
   for (int j = 0; j < ${MAX_SUBSTEPS}; j++) {
     if (j >= uSub) break;
     if (uWarm == 1 && uStep0 + float(j) >= K) break;
-    rk4(A, B, uH);
+    if (uEuler == 1) euler(A, B, uH); else rk4(A, B, uH);
   }
 
   // Both compute shaders draw the same random numbers, so the A and B halves of a particle stay together.
@@ -157,7 +178,7 @@ function buildSimulation() {
   gpu = new GPUComputationRenderer(side, side, renderer);
   const tA = gpu.createTexture(), tB = gpu.createTexture();
   const A = tA.image.data, B = tB.image.data;
-  const h = att.dtMax;
+  const h = stepSize();
   const icB = att.icB || [0, 0, 0], jB = att.jitterB || [0, 0, 0];
   let total = 0;
   for (let i = 0; i < N; i++) {
@@ -181,11 +202,11 @@ function buildSimulation() {
   gpu.setVariableDependencies(varB, [varA, varB]);
   for (const v of [varA, varB]) {
     Object.assign(v.material.uniforms, {
-      uH: { value: h }, uSub: { value: 1 }, uStep0: { value: 0 }, uWarm: { value: 1 }, uSeed: { value: 0 },
+      uH: { value: h }, uSub: { value: 1 }, uStep0: { value: 0 }, uWarm: { value: 1 }, uEuler: { value: 0 }, uSeed: { value: 0 },
       uRespawnProb: { value: 0 },
       uBoxLo: { value: new THREE.Vector3(...(att.respawn ? att.respawn.boxLo : [0, 0, 0])) },
       uBoxHi: { value: new THREE.Vector3(...(att.respawn ? att.respawn.boxHi : [0, 0, 0])) },
-      uBoundLo: { value: new THREE.Vector4(...att.boundLo) }, uBoundHi: { value: new THREE.Vector4(...att.boundHi) },
+      uBoundLo: { value: new THREE.Vector4(...boundsA()[0]) }, uBoundHi: { value: new THREE.Vector4(...boundsA()[1]) },
       uBoundLoB: { value: new THREE.Vector3(...(att.boundLoB || [-1, -1, -1])) },
       uBoundHiB: { value: new THREE.Vector3(...(att.boundHiB || [1, 1, 1])) },
       uJitter: { value: new THREE.Vector4(...att.jitter.map((j) => 0.1 * j)) },
@@ -195,6 +216,8 @@ function buildSimulation() {
   const err = gpu.init();
   if (err) fail('GPU simulation could not start: ' + err);
   warm = { step: 0, total };
+  stepDebt = 0;
+  $('posterRow').hidden = !att.poster;
   fadeIn = 0;
   buildPoints();
   pointsMat.uniforms.uCenter.value.set(...att.center);
@@ -208,6 +231,7 @@ function setSimUniforms(h, sub, step0, warming) {
   for (const v of [varA, varB]) {
     const u = v.material.uniforms;
     u.uH.value = h; u.uSub.value = sub; u.uStep0.value = step0; u.uWarm.value = warming ? 1 : 0; u.uSeed.value = seed;
+    u.uEuler.value = usingEuler() ? 1 : 0;
     u.uRespawnProb.value = (!warming && att.respawn) ? 1 - Math.exp(-att.respawn.rate * h * sub) : 0;
   }
 }
@@ -219,7 +243,7 @@ function advance(frameSeconds) {
     let done = 0;
     while (done < perFrame && warm.step < warm.total) {
       const sub = Math.min(MAX_SUBSTEPS, warm.total - warm.step);
-      setSimUniforms(att.dtMax, sub, warm.step, true);
+      setSimUniforms(stepSize(), sub, warm.step, true);
       gpu.compute();
       warm.step += sub; done += sub;
     }
@@ -229,6 +253,13 @@ function advance(frameSeconds) {
   }
   if (settings.paused || settings.speed === 0) return;
   const simTime = settings.speed * att.period / 2 * frameSeconds;
+  if (usingEuler()) {
+    // The artifact depends on the exact step size, so take whole fixed-size steps and carry the remainder.
+    stepDebt += simTime / att.poster.dt;
+    let n = Math.floor(stepDebt); stepDebt -= n;
+    while (n > 0) { const sub = Math.min(MAX_SUBSTEPS, n); setSimUniforms(att.poster.dt, sub, 0, false); gpu.compute(); n -= sub; }
+    return;
+  }
   const steps = Math.max(1, Math.ceil(simTime / att.dtMax));
   const passes = Math.ceil(steps / MAX_SUBSTEPS);
   const sub = Math.ceil(steps / passes);
@@ -422,11 +453,12 @@ function initPanel() {
   bind('speed', 'speed', (v) => v.toFixed(2) + '×');
   bind('trails', 'trails', (v) => v === 0 ? 'off' : v.toFixed(2));
   bind('glow', 'glow', (v) => v.toPrecision(2), (s) => Math.pow(10, Number(s)), (v) => Math.log10(v));
-  bind('size', 'size', (v) => v + ' px');
   $('color').value = settings.color;
   $('color').addEventListener('input', (e) => { settings.color = e.target.value; });
   $('autorotate').checked = settings.autoRotate;
   $('autorotate').addEventListener('change', (e) => { settings.autoRotate = e.target.checked; });
+  $('posterlook').checked = settings.posterLook;
+  $('posterlook').addEventListener('change', (e) => { settings.posterLook = e.target.checked; buildSimulation(); });
   $('equalaxes').checked = settings.equalAxes;
   $('equalaxes').addEventListener('change', (e) => { settings.equalAxes = e.target.checked; updateScale(); });
   $('pause').addEventListener('click', () => {

@@ -32,6 +32,8 @@
              text-align: center; background: #000; color: #f0b6b6; font-size: 15px; }
     #error[hidden], #show[hidden], #panel[hidden] { display: none; }
     .hint { margin-top: 10px; color: #6f878a; font-size: 12px; }
+    .note { margin: 4px 0 0 22px; color: #6f878a; font-size: 11.5px; line-height: 1.35; }
+    #posterRow[hidden], #posterRow[hidden] + .note { display: none; }
   </style>
   <script type="importmap">
     {
@@ -67,13 +69,14 @@
     <label for="glow">Glow <span id="glowValue"></span></label>
     <input id="glow" type="range" min="-2.5" max="0.5" step="0.01">
 
-    <label for="size">Point size <span id="sizeValue"></span></label>
-    <input id="size" type="range" min="1" max="4" step="1">
-
     <div class="row">
       <label for="color">Colour</label><input id="color" type="color">
       <label for="autorotate"><input id="autorotate" type="checkbox"> Auto-rotate</label>
     </div>
+    <div class="row" id="posterRow" hidden>
+      <label for="posterlook"><input id="posterlook" type="checkbox"> Poster look</label>
+    </div>
+    <div class="note" id="posterNote">Coarse Euler steps (dt = 0.005), as in many renders. The spiral into the centre is a numerical artifact, not part of the true attractor.</div>
     <div class="row">
       <label for="equalaxes" title="Stretch each axis to the same size, like matplotlib's set_box_aspect([1, 1, 1])"><input id="equalaxes" type="checkbox"> Equal axes</label>
     </div>
