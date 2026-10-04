@@ -128,7 +128,7 @@ while True:
             elif attractor == 21:
                 a, b, c = input("Enter a comma-separated initial position (around 0.349, 0, -0.16 is recommended): ").split(',')
             elif attractor == 22:
-                a, b, c = input("Enter a comma-separated initial position (around 1, 0, 0 is recommended): ").split(',')
+                a, b, c = input("Enter a comma-separated initial position (around 0, 5, 0 is recommended): ").split(',')
             elif attractor == 23:
                 a, b, c = input("Enter a comma-separated initial position (around 0.1, 0.1, 0.1 is recommended): ").split(',')
             elif attractor == 24:
@@ -832,9 +832,11 @@ while True:
     elif attractor == 22:
         attractor = "Nose-Hoover"
 
+        # Nose-Hoover has no single attractor: starts like (1, 0, 0) lie on smooth tori, while (0, 5, 0) is in the
+        # chaotic sea, which fills in slowly, hence the long run
         dt = 0.0005
-        integSteps = 660000 # t = 330
-        drawStride = 33 # Keep every drawStride-th point for drawing
+        integSteps = 2000000 # t = 1000
+        drawStride = 50 # Keep every drawStride-th point for drawing
         pointsPerFrame = integSteps // drawStride // steps # Drawn points revealed per frame so the animation stays at steps frames
 
         # Nose-Hoover parameters
