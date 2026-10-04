@@ -5,15 +5,9 @@
 - Me
 - Claude (for the live viewer)
 
-## Demo (Aizawa Attractor)
+## Demo
 
-![](Animations/Thumbnail.gif)
-
-| Color             | Initial Position      |
-| ----------------- | --------------------- |
-| Blue | (x, y, z) = (0.1, 0, 0) |
-| Orange | (x, y, z) = (0.2, 0.1, 0.1) |
-| Green | (x, y, z) = (0.3, 0.1, 0.1) |
+![](Animations/StrangeAttractors.gif)
 
 ## Live viewer
 
