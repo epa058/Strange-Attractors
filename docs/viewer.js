@@ -411,11 +411,16 @@ function setTint() {
 // These are integrated on the CPU in 64-bit floats (RK4, or Euler for the poster look) and kept as a ring
 // buffer of line segments per trajectory, so the history rotates with the view. Older segments fade out
 // over the trail length set by the Trails slider.
+// Points are taken at equal time steps, but many attractors speed up enormously in places (Dadras, Four-Wing,
+// Yu-Wang by about 50x), which would leave long straight segments there. So a step that moves further than
+// LINE_MAX_SEGMENT is redone in smaller RK4 steps, giving points about evenly spaced along the curve. In the
+// poster look the coarse Euler points are kept and joined by a smooth curve instead.
 
-const LINE_SAMPLES_PER_LOOP = 200;  // line points per loop around the attractor
-const LINE_MAX_LOOPS = 150;         // longest trail (Trails slider at maximum)
+const LINE_SAMPLES_PER_LOOP = 200;  // time steps per loop around the attractor (more points where it moves fast)
+const LINE_MAX_SEGMENT = 0.01;      // longest line segment, as a fraction of the attractor's radius
+const LINE_MAX_LOOPS = 100;         // longest trail (Trails slider at maximum)
 const LINE_MIN_LOOPS = 2;           // shortest trail (Trails slider at 0)
-const LINE_CAPACITY = LINE_SAMPLES_PER_LOOP * LINE_MAX_LOOPS; // segments kept per trajectory
+const LINE_CAPACITY = 60000;        // segments kept per trajectory (very long trails of fast attractors get cut short)
 const LINE_MAX_TRAJ = 10;
 const LINE_GAIN = 4;                // brightness of one line before the glow tone map
 
@@ -520,49 +525,86 @@ function buildLines() {
   if (euler) { h = att.poster.dt; sub = Math.max(1, Math.round(att.period / LINE_SAMPLES_PER_LOOP / h)); }
   else { const sdt = att.period / LINE_SAMPLES_PER_LOOP; sub = Math.ceil(sdt / att.dtMax); h = sdt / sub; }
   const n = settings.lineCount;
-  const L = { f: derivJS(att), n, h, sub, euler, sampleDt: h * sub, head: 0, debt: 0, traj: [],
+  const L = { f: derivJS(att), n, h, sub, euler, sampleDt: h * sub, head: 0, debt: 0, traj: [], maxSeg: LINE_MAX_SEGMENT * att.radius,
               k1: new Float64Array(7), k2: new Float64Array(7), k3: new Float64Array(7), k4: new Float64Array(7), tmp: new Float64Array(7) };
-  for (let t = 0; t < n; t++) { const s = new Float64Array(7); lineStart(L, s); L.traj.push({ s, broken: true }); }
+  for (let t = 0; t < n; t++) { const s = new Float64Array(7); lineStart(L, s); L.traj.push({ s, broken: true, wp: 0 }); }
   lines = L;
   // Clear the buffer, then fill the whole history at once so the full trail shows straight away.
   const geo = lineObj.geometry;
   geo.attributes.aIdx.array.fill(-1e9);
   geo.setDrawRange(0, n * LINE_CAPACITY * 2);
-  addLineSamples(LINE_CAPACITY, true);
+  addLineSamples(Math.ceil(LINE_MAX_LOOPS * att.period / L.sampleDt), true);
 }
 
-// Advance every trajectory by `count` samples, writing one segment per sample.
+// Write one segment into trajectory t's ring buffer.
+function putSegment(tr, t, a, b, idx) {
+  const P = lineObj.geometry.attributes.position.array, I = lineObj.geometry.attributes.aIdx.array;
+  const v = 2 * (t * LINE_CAPACITY + (tr.wp % LINE_CAPACITY));
+  P[3 * v] = a[0]; P[3 * v + 1] = a[1]; P[3 * v + 2] = a[2];
+  P[3 * v + 3] = b[0]; P[3 * v + 4] = b[1]; P[3 * v + 5] = b[2];
+  I[v] = I[v + 1] = idx;
+  tr.wp++;
+}
+
+// Advance every trajectory by `count` time steps. Each step writes one segment, or several where it moves fast.
 function addLineSamples(count, full = false) {
-  const L = lines, geo = lineObj.geometry, P = geo.attributes.position.array, I = geo.attributes.aIdx.array;
+  const L = lines, geo = lineObj.geometry;
   const respawnProb = respawning() ? 1 - Math.exp(-att.respawn.rate * L.sampleDt) : 0;
-  const prev = new Float64Array(7);
+  const prev = new Float64Array(7), mid = new Float64Array(7), h = L.h;
   // A trajectory that is blowing up (poster look only) takes huge steps before it leaves the escape box; hide those
   // segments so they don't draw straight streaks.
   const maxSeg2 = L.euler ? Math.pow(0.2 * att.radius, 2) : Infinity;
+  const starts = [];
   for (let t = 0; t < L.n; t++) {
     const tr = L.traj[t], s = tr.s;
+    starts.push(tr.wp);
     for (let m = 0; m < count; m++) {
+      const idx = L.head + m + 1;
       prev.set(s);
       for (let i = 0; i < L.sub; i++) lineStep(L, s);
-      let broken = tr.broken || (s[0] - prev[0]) ** 2 + (s[1] - prev[1]) ** 2 + (s[2] - prev[2]) ** 2 > maxSeg2;
-      if (lineEscaped(s)) { hideEscapeTail(t, L.head + m); lineStart(L, s); broken = true; }
-      else if (respawnProb > 0 && Math.random() < respawnProb) { lineStart(L, s); broken = true; }
-      tr.broken = false;
-      const idx = L.head + m + 1, slot = t * LINE_CAPACITY + (idx % LINE_CAPACITY), v = 2 * slot;
-      P[3 * v] = prev[0]; P[3 * v + 1] = prev[1]; P[3 * v + 2] = prev[2];
-      P[3 * v + 3] = s[0]; P[3 * v + 4] = s[1]; P[3 * v + 5] = s[2];
-      I[v] = I[v + 1] = broken ? -1e9 : idx;
+      const d2 = (s[0] - prev[0]) ** 2 + (s[1] - prev[1]) ** 2 + (s[2] - prev[2]) ** 2;
+      if (lineEscaped(s)) { hideEscapeTail(tr, t); lineStart(L, s); tr.broken = true; continue; }
+      if (tr.broken || d2 > maxSeg2) { putSegment(tr, t, prev, s, -1e9); tr.broken = false; }
+      else if (!L.euler && d2 > L.maxSeg * L.maxSeg) {
+        // Moving fast: redo this step as k smaller steps (Euler keeps its exact step, as the poster look depends on it).
+        const k = Math.min(64, Math.ceil(Math.sqrt(d2) / L.maxSeg));
+        s.set(prev); L.h = h / k;
+        for (let j = 1; j <= k; j++) {
+          mid.set(s);
+          for (let i = 0; i < L.sub; i++) lineStep(L, s);
+          putSegment(tr, t, mid, s, idx - 1 + j / k);
+        }
+        L.h = h;
+      } else if (L.euler && d2 > L.maxSeg * L.maxSeg) {
+        // Poster look: the Euler points themselves must stay, so draw a smooth curve through them instead (a cubic
+        // Hermite curve whose end slopes are the derivatives there; for one Euler step the start slope is exact).
+        const k = Math.min(64, Math.ceil(Math.sqrt(d2) / L.maxSeg)), H = h * L.sub;
+        L.f(prev, L.k1); L.f(s, L.k2);
+        let a = prev.slice();
+        for (let j = 1; j <= k; j++) {
+          const u = j / k, u2 = u * u, u3 = u2 * u;
+          const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+          for (let c = 0; c < 3; c++) mid[c] = h00 * prev[c] + h10 * H * L.k1[c] + h01 * s[c] + h11 * H * L.k2[c];
+          putSegment(tr, t, a, mid, idx - 1 + u);
+          a = mid.slice();
+        }
+      } else putSegment(tr, t, prev, s, idx);
+      if (respawnProb > 0 && Math.random() < respawnProb) { lineStart(L, s); tr.broken = true; }
     }
   }
   // Upload only the slots that changed (one or two runs per trajectory, as the ring buffer wraps). Ranges add up
   // until the next render uploads them, so a rebuild followed by new samples in the same frame uploads both.
   const pos = geo.attributes.position, ia = geo.attributes.aIdx;
-  if (full || count >= LINE_CAPACITY) {
-    pos.addUpdateRange(0, L.n * LINE_CAPACITY * 6); ia.addUpdateRange(0, L.n * LINE_CAPACITY * 2);
-  } else {
-    const a = (L.head + 1) % LINE_CAPACITY, b = (L.head + count) % LINE_CAPACITY;
-    const runs = a <= b ? [[a, b - a + 1]] : [[a, LINE_CAPACITY - a], [0, b + 1]];
-    for (let t = 0; t < L.n; t++) for (const [start, len] of runs) {
+  for (let t = 0; t < L.n; t++) {
+    const written = L.traj[t].wp - starts[t];
+    if (written <= 0) continue;
+    let runs;
+    if (full || written >= LINE_CAPACITY) runs = [[0, LINE_CAPACITY]];
+    else {
+      const a = starts[t] % LINE_CAPACITY, b = (L.traj[t].wp - 1) % LINE_CAPACITY;
+      runs = a <= b ? [[a, b - a + 1]] : [[a, LINE_CAPACITY - a], [0, b + 1]];
+    }
+    for (const [start, len] of runs) {
       const v = 2 * (t * LINE_CAPACITY + start);
       pos.addUpdateRange(3 * v, 6 * len); ia.addUpdateRange(v, 2 * len);
     }
@@ -572,10 +614,10 @@ function addLineSamples(count, full = false) {
 }
 
 // When a trajectory escapes, also hide the run-up of its last segments outside the attractor's usual box.
-function hideEscapeTail(t, lastIdx) {
+function hideEscapeTail(tr, t) {
   const P = lineObj.geometry.attributes.position.array, I = lineObj.geometry.attributes.aIdx.array;
   const lo = att.center.map((c, k) => c - 0.5 * att.extent[k]), hi = att.center.map((c, k) => c + 0.5 * att.extent[k]);
-  for (let j = lastIdx; j > lastIdx - 2 * LINE_SAMPLES_PER_LOOP && j > 0; j--) {
+  for (let j = tr.wp - 1; j > tr.wp - 1 - 2 * LINE_SAMPLES_PER_LOOP && j >= 0; j--) {
     const v = 2 * (t * LINE_CAPACITY + (j % LINE_CAPACITY));
     let outside = false;
     for (let c = 0; c < 3; c++) { const p = P[3 * (v + 1) + c]; if (!(p >= lo[c] && p <= hi[c])) outside = true; }
@@ -588,7 +630,7 @@ function hideEscapeTail(t, lastIdx) {
 function advanceLines(frameSeconds) {
   if (!lines || settings.paused || settings.speed === 0) return;
   lines.debt += settings.speed * att.period / 2 * frameSeconds / lines.sampleDt;
-  const count = Math.min(LINE_CAPACITY, Math.floor(lines.debt));
+  const count = Math.min(20000, Math.floor(lines.debt));
   lines.debt -= count;
   if (count > 0) addLineSamples(count);
 }
@@ -600,7 +642,7 @@ function lineTrailLoops() {
 
 function drawLines() {
   lineMat.uniforms.uHead.value = lines ? lines.head : 0;
-  lineMat.uniforms.uLen.value = lines ? Math.min(LINE_CAPACITY - 1, lineTrailLoops() * att.period / lines.sampleDt) : 1;
+  lineMat.uniforms.uLen.value = lines ? lineTrailLoops() * att.period / lines.sampleDt : 1;
   renderer.setRenderTarget(lineRT);
   renderer.setClearColor(0x000000, 0);
   renderer.clear();
